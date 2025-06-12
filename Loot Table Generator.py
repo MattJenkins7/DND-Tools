@@ -150,7 +150,7 @@ def run_generation(mode, method, out_name, max_items, level=None, value=None):
     name_idx = None
     rarity_idx = None
     type_idx = None
-    attunement_idx = None
+    attune_idx = None
     text_idx = None
     for i, col in enumerate(header):
         col_l = col.strip().lower()
@@ -161,10 +161,10 @@ def run_generation(mode, method, out_name, max_items, level=None, value=None):
         elif col_l == 'type':
             type_idx = i
         elif col_l == 'attunement':
-            attunement_idx = i
+            attune_idx = i
         elif col_l == 'text':
             text_idx = i
-    if None in [name_idx, rarity_idx, type_idx, attunement_idx, text_idx]:
+    if None in [name_idx, rarity_idx, type_idx, attune_idx, text_idx]:
         raise Exception('CSV missing required columns.')
     if method == 'level':
         selected = select_items_by_level(data, level)
@@ -182,7 +182,7 @@ def run_generation(mode, method, out_name, max_items, level=None, value=None):
             rarity = row[rarity_idx].strip().lower() if rarity_idx < len(row) else 'unknown'
             typ = row[type_idx] if type_idx < len(row) and row[type_idx].strip() else 'Unknown'
             value = get_item_value(rarity)
-            attunement = row[attunement_idx] if attunement_idx < len(row) else ''
+            attunement = row[attune_idx] if attune_idx < len(row) else ''
             text = row[text_idx] if text_idx < len(row) else ''
             shop_data.append([name, rarity, typ, value, attunement, text])
         write_csv_shop(shop_header, shop_data, out_path)
@@ -194,7 +194,7 @@ def run_generation(mode, method, out_name, max_items, level=None, value=None):
             name = row[name_idx] if name_idx < len(row) else ''
             rarity = row[rarity_idx].strip().lower() if rarity_idx < len(row) else 'unknown'
             typ = row[type_idx] if type_idx < len(row) and row[type_idx].strip() else 'Unknown'
-            attunement = row[attunement_idx] if attunement_idx < len(row) else ''
+            attunement = row[attune_idx] if attune_idx < len(row) else ''
             text = row[text_idx] if text_idx < len(row) else ''
             loot_data.append([name, rarity, typ, attunement, text])
         write_csv_loot(loot_header, loot_data, out_path)
@@ -830,20 +830,55 @@ class MagicItemGenerator(QMainWindow):
         stat_label = QLabel('Stat Generation:')
         stat_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
         stat_gen_bar.addWidget(stat_label)
-        self.stat_spinboxes = []
-        self.stat_combos = []
+
+        # --- Stat Section (Unified Row per Stat) ---
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+        stat_grid = QGridLayout()
+        stat_grid.addWidget(QLabel('<b>Stat</b>'), 0, 0)
+        stat_grid.addWidget(QLabel('<b>Value</b>'), 0, 1)
+        stat_grid.addWidget(QLabel('<b>Score Increases</b>'), 0, 2)
+        stat_grid.addWidget(QLabel('<b>Total</b>'), 0, 3)
+        self.stat_spinboxes = []
+        self.stat_increase_labels = []
+        self.stat_total_labels = []
+        self.stat_combos = []
         for i, stat in enumerate(stat_names):
+            stat_grid.addWidget(QLabel(stat), i+1, 0)
             spin = QSpinBox()
             spin.setRange(1, 20)
             spin.setValue(10)
-            combo = QComboBox()
-            combo.addItems(stat_names)  # Each combo gets its own independent list
-            combo.setCurrentIndex(i)
+            stat_grid.addWidget(spin, i+1, 1)
+            inc_label = QLabel('0')
+            inc_label.setMinimumWidth(24)
+            inc_label.setAlignment(Qt.AlignCenter)
+            stat_grid.addWidget(inc_label, i+1, 2)
+            total_label = QLabel('10')
+            total_label.setMinimumWidth(24)
+            total_label.setAlignment(Qt.AlignCenter)
+            stat_grid.addWidget(total_label, i+1, 3)
             self.stat_spinboxes.append(spin)
-            self.stat_combos.append(combo)
-            stat_gen_bar.addWidget(spin)
-            stat_gen_bar.addWidget(combo)
+            self.stat_increase_labels.append(inc_label)
+            self.stat_total_labels.append(total_label)
+        stat_grid.setHorizontalSpacing(12)
+        stat_grid.setVerticalSpacing(4)
+
+        # --- ASI Source Selection (Radio Buttons) ---
+        from PySide6.QtWidgets import QRadioButton, QButtonGroup
+        asi_radio_bar = QHBoxLayout()
+        asi_radio_bar.addWidget(QLabel('Apply Ability Score Increases from:'))
+        self.asi_group = QButtonGroup()
+        self.asi_race_radio = QRadioButton('Race')
+        self.asi_bg_radio = QRadioButton('Background')
+        self.asi_both_radio = QRadioButton('Both')
+        self.asi_race_radio.setChecked(True)
+        self.asi_group.addButton(self.asi_race_radio, 0)
+        self.asi_group.addButton(self.asi_bg_radio, 1)
+        self.asi_group.addButton(self.asi_both_radio, 2)
+        asi_radio_bar.addWidget(self.asi_race_radio)
+        asi_radio_bar.addWidget(self.asi_bg_radio)
+        asi_radio_bar.addWidget(self.asi_both_radio)
+        asi_radio_bar.addStretch()
+        self.asi_group.buttonClicked.connect(self.update_stat_totals)
 
         # --- Stat Generation Parameters ---
         param_bar = QHBoxLayout()
@@ -882,25 +917,69 @@ class MagicItemGenerator(QMainWindow):
         param_bar.addStretch()
 
         # --- Generate Button ---
+        stat_controls_bar = QHBoxLayout()
         gen_btn = QPushButton('Generate Stats')
         gen_btn.clicked.connect(self.generate_stats)
-        stat_gen_bar.addWidget(gen_btn)
-        stat_gen_bar.addStretch()
+        stat_controls_bar.addWidget(gen_btn)
+        stat_controls_bar.addStretch()
 
-        # Add to the right of backgrounds (use a horizontal layout for backgrounds and stat gen)
-        bg_stat_row = QVBoxLayout()
-        bg_stat_row.addLayout(bg_bar)
-        bg_stat_row.addLayout(param_bar)
-        bg_stat_row.addLayout(stat_gen_bar)
-        char_layout.addLayout(bg_stat_row)
+        # Add to layout
+        char_layout.addLayout(race_bar)
+        char_layout.addWidget(self.race_info_label)
+        char_layout.addLayout(bg_bar)
+        char_layout.addWidget(self.bg_info_label)
+        char_layout.addLayout(asi_radio_bar)
+        char_layout.addLayout(stat_grid)
+        char_layout.addLayout(stat_controls_bar)
+        char_layout.addLayout(param_bar)
 
-        # Connect stat dropdowns to enforce unique selection and swap logic
-        for idx, combo in enumerate(self.stat_combos):
-            combo.currentIndexChanged.connect(functools.partial(self.handle_stat_swap, idx))
-        # No call to update_stat_dropdowns here
-        # ...existing code...
+        # Connect stat spinboxes to update totals
+        for spin in self.stat_spinboxes:
+            spin.valueChanged.connect(self.update_stat_totals)
+        self.update_stat_totals()
 
+        # Add the Character Creator tab to the tab widget
         self.tabs.addTab(char_tab, 'Character Creator')
+
+    def update_stat_totals(self):
+        stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+        values = [spin.value() for spin in self.stat_spinboxes]
+        # Determine which ASI sources to use
+        race = self.asi_race_radio.isChecked() or self.asi_both_radio.isChecked()
+        background = self.asi_bg_radio.isChecked() or self.asi_both_radio.isChecked()
+        asi = {k: 0 for k in stat_names}
+        asi_prompts = []
+        if race:
+            race_name = self.race_combo.currentText()
+            for row in self.race_data:
+                if row['name'].strip() == race_name:
+                    asi_str = row.get('Ability Score Increase', '')
+                    asi_result, prompt = self.parse_asi_string_with_prompt(asi_str, 'Race')
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    if prompt:
+                        asi_prompts.append(prompt)
+                    break
+        if background:
+            bg_name = self.bg_combo.currentText()
+            for row in self.background_data:
+                if row['name'].strip() == bg_name:
+                    asi_str = row.get('ability', '')
+                    asi_result, prompt = self.parse_asi_string_with_prompt(asi_str, 'Background')
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    if prompt:
+                        asi_prompts.append(prompt)
+                    break
+        # If any prompts, show dialog for user input
+        if asi_prompts:
+            asi_choices = self.prompt_asi_choices(asi_prompts)
+            for k, v in asi_choices.items():
+                asi[k] += v
+        # Update labels
+        for i, stat in enumerate(stat_names):
+            self.stat_increase_labels[i].setText(str(asi.get(stat, 0)))
+            self.stat_total_labels[i].setText(str(values[i] + asi.get(stat, 0)))
 
     def generate_stats(self):
         import random
@@ -940,6 +1019,7 @@ class MagicItemGenerator(QMainWindow):
             break
         for i, val in enumerate(numbers):
             self.stat_spinboxes[i].setValue(val)
+        self.update_stat_totals()
 
     def handle_stat_swap(self, changed_idx, *args):
         changed_combo = self.stat_combos[changed_idx]
@@ -996,6 +1076,234 @@ class MagicItemGenerator(QMainWindow):
                 return
         self.bg_info_label.setText('')
 
+    def prompt_and_apply_asi(self):
+        # Prompt user for source of ability score increases
+        from PySide6.QtWidgets import QMessageBox
+        msg = QMessageBox(self)
+        msg.setWindowTitle('Apply Ability Score Increases')
+        msg.setText('Apply ability score increases from:')
+        race_btn = msg.addButton('Race', QMessageBox.ActionRole)
+        bg_btn = msg.addButton('Background', QMessageBox.ActionRole)
+        both_btn = msg.addButton('Both', QMessageBox.ActionRole)
+        cancel_btn = msg.addButton('Cancel', QMessageBox.RejectRole)
+        msg.exec()
+        if msg.clickedButton() == race_btn:
+            self.apply_asi(race=True, background=False)
+        elif msg.clickedButton() == bg_btn:
+            self.apply_asi(race=False, background=True)
+        elif msg.clickedButton() == both_btn:
+            self.apply_asi(race=True, background=True)
+        else:
+            return
+
+    def apply_asi(self, race=True, background=True):
+        stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+        stat_values = [spin.value() for spin in self.stat_spinboxes]
+        print(f"[DEBUG] Current stat values before ASI: {dict(zip(stat_names, stat_values))}")
+        asi = {name: 0 for name in stat_names}
+        asi_prompts = []
+        # Parse race ASI
+        if race:
+            race_name = self.race_combo.currentText()
+            print(f"[DEBUG] Selected race: {race_name}")
+            for row in self.race_data:
+                if row['name'].strip() == race_name:
+                    # Use correct field name for races.csv
+                    asi_str = row.get('Ability Score Increase', '')
+                    print(f"[DEBUG] Race ASI string: {asi_str}")
+                    asi_result, prompt = self.parse_asi_string_with_prompt(asi_str, 'Race')
+                    print(f"[DEBUG] Race ASI parsed: {asi_result}, prompt: {prompt}")
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    if prompt:
+                        asi_prompts.append(prompt)
+                    break
+        # Parse background ASI
+        if background:
+            bg_name = self.bg_combo.currentText()
+            print(f"[DEBUG] Selected background: {bg_name}")
+            for row in self.background_data:
+                if row['name'].strip() == bg_name:
+                    # Use correct field name for backgrounds.csv
+                    asi_str = row.get('ability', '')
+                    print(f"[DEBUG] Background ASI string: {asi_str}")
+                    asi_result, prompt = self.parse_asi_string_with_prompt(asi_str, 'Background')
+                    print(f"[DEBUG] Background ASI parsed: {asi_result}, prompt: {prompt}")
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    if prompt:
+                        asi_prompts.append(prompt)
+                    break
+        print(f"[DEBUG] ASI after parsing: {asi}")
+        # If any prompts, show dialog for user input
+        if asi_prompts:
+            asi_choices = self.prompt_asi_choices(asi_prompts)
+            print(f"[DEBUG] User ASI choices: {asi_choices}")
+            for k, v in asi_choices.items():
+                asi[k] += v
+        print(f"[DEBUG] Final ASI to apply: {asi}")
+        # Add ASI to stats
+        for i, stat in enumerate(stat_names):
+            print(f"[DEBUG] Adding {asi.get(stat, 0)} to {stat} (was {stat_values[i]})")
+            self.stat_spinboxes[i].setValue(stat_values[i] + asi.get(stat, 0))
+        self.update_stat_totals()
+
+    def parse_asi_string_with_prompt(self, asi_str, source_label):
+        print(f"[DEBUG] Parsing ASI string: '{asi_str}' from {source_label}")
+        """
+        Returns: (asi_dict, prompt_dict or None)
+        asi_dict: {stat: value} for direct assignments
+        prompt_dict: { 'type': ..., 'source': ..., ... } for user input if needed
+        """
+        import re
+        stat_names = {'STR': 'STR', 'DEX': 'DEX', 'CON': 'CON', 'WIS': 'WIS', 'INT': 'INT', 'CHA': 'CHA',
+                      'STRENGTH': 'STR', 'DEXTERITY': 'DEX', 'CONSTITUTION': 'CON', 'WISDOM': 'WIS', 'INTELLIGENCE': 'INT', 'CHARISMA': 'CHA',
+                      'CHA': 'CHA', 'CON': 'CON', 'WIS': 'WIS', 'INT': 'INT'}
+        asi = {k: 0 for k in ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']}
+        asi_str = asi_str.strip()
+        if not asi_str:
+            return asi, None
+        # Direct assignments: e.g. "Cha +2, Dex +1"
+        direct_pattern = r'(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA|CHA|CON|WIS|INT)[^\d+-]*([+-]?\d+)'  # e.g. STR +2
+        direct_matches = re.findall(direct_pattern, asi_str.upper())
+        if direct_matches:
+            for stat, val in direct_matches:
+                stat = stat_names.get(stat, stat)
+                try:
+                    asi[stat] += int(val)
+                except Exception:
+                    pass
+            # If there are no choose/points/option keywords, return direct
+            if not re.search(r'choose|point|option|among|other|one of', asi_str, re.IGNORECASE):
+                return asi, None
+        # Handle choose/points/option/among/other/one of
+        # Examples:
+        #   "Choose any +2"
+        #   "Choose any +2, Choose any other +1"
+        #   "Choose one of: (a) Choose any +2; choose any other +1 (b) Choose three different +1"
+        #   "3 points among Wis, Cha, Int"
+        prompt = {'type': None, 'source': source_label, 'raw': asi_str}
+        if re.search(r'choose one of', asi_str, re.IGNORECASE):
+            prompt['type'] = 'choose_one_of'
+            # Extract options
+            options = re.findall(r'\(a\)(.*?)\(b\)(.*)', asi_str, re.IGNORECASE)
+            if options:
+                prompt['options'] = [options[0][1].strip(), options[0][3].strip()]
+            else:
+                # fallback: split by (a), (b), etc.
+                parts = re.split(r'\([a-z]\)', asi_str, flags=re.IGNORECASE)
+                prompt['options'] = [p.strip() for p in parts if p and not re.match(r'^[a-z]$', p, re.IGNORECASE)]
+        elif re.search(r'choose any', asi_str, re.IGNORECASE):
+            prompt['type'] = 'choose_any'
+            # e.g. "Choose any +2, Choose any other +1"
+            choose_matches = re.findall(r'choose any[^\d+-]*([+-]?\d+)', asi_str, re.IGNORECASE)
+            prompt['amounts'] = [int(x) for x in choose_matches]
+            # Check for "other" for secondary pick
+            if re.search(r'other', asi_str, re.IGNORECASE):
+                prompt['other'] = True
+        elif re.search(r'points among', asi_str, re.IGNORECASE):
+            prompt['type'] = 'points_among'
+            pts = re.search(r'(\d+)\s*points?', asi_str)
+            if pts:
+                prompt['points'] = int(pts.group(1))
+            allowed_stats = re.findall(r'(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA)', asi_str.upper())
+            prompt['allowed'] = list({stat_names.get(s, s) for s in allowed_stats})
+        elif re.search(r'choose any', asi_str, re.IGNORECASE):
+            prompt['type'] = 'choose_any'
+            # fallback
+        else:
+            prompt['type'] = 'unknown'
+        return asi, prompt
+
+    def prompt_asi_choices(self, asi_prompts):
+        # For each prompt, show a dialog to the user to select stats and distribution
+        # Returns a dict {stat: value}
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QSpinBox, QPushButton, QHBoxLayout
+        stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+        asi_result = {k: 0 for k in stat_names}
+        for prompt in asi_prompts:
+            dlg = QDialog()
+            dlg.setWindowTitle(f"Select Ability Score Increases ({prompt['source']})")
+            layout = QVBoxLayout()
+            layout.addWidget(QLabel(f"{prompt['raw']}"))
+            if prompt['type'] == 'choose_any':
+                picks = []
+                used = set()
+                for idx, amt in enumerate(prompt.get('amounts', [])):
+                    row = QHBoxLayout()
+                    label = QLabel(f"Choose stat for +{amt}: ")
+                    combo = QComboBox()
+                    combo.addItems([s for s in stat_names if s not in used])
+                    row.addWidget(label)
+                    row.addWidget(combo)
+                    layout.addLayout(row)
+                    picks.append((combo, amt))
+                    def on_change(idx=idx):
+                        # Update other combos to prevent duplicate selection
+                        selected = [c.currentText() for c, _ in picks]
+                        for i, (c, _) in enumerate(picks):
+                            c.blockSignals(True)
+                            c.clear()
+                            c.addItems([s for s in stat_names if s not in selected or s == selected[i]])
+                            c.setCurrentText(selected[i])
+                            c.blockSignals(False)
+                    combo.currentIndexChanged.connect(on_change)
+                btn = QPushButton('OK')
+                btn.clicked.connect(dlg.accept)
+                layout.addWidget(btn)
+                dlg.setLayout(layout)
+                dlg.exec()
+                for c, amt in picks:
+                    asi_result[c.currentText()] += amt
+            elif prompt['type'] == 'points_among':
+                allowed = prompt.get('allowed', stat_names)
+                points = prompt.get('points', 3)
+                spinboxes = []
+                row = QHBoxLayout()
+                row.addWidget(QLabel(f"Distribute {points} points among: "))
+                for stat in allowed:
+                    spin = QSpinBox()
+                    spin.setRange(0, points)
+                    spin.setValue(0)
+                    row.addWidget(QLabel(stat))
+                    row.addWidget(spin)
+                    spinboxes.append((stat, spin))
+                layout.addLayout(row)
+                btn = QPushButton('OK')
+                layout.addWidget(btn)
+                def accept_if_valid():
+                    total = sum(spin.value() for _, spin in spinboxes)
+                    if total == points:
+                        dlg.accept()
+                btn.clicked.connect(accept_if_valid)
+                dlg.setLayout(layout)
+                dlg.exec()
+                for stat, spin in spinboxes:
+                    asi_result[stat] += spin.value()
+            elif prompt['type'] == 'choose_one_of':
+                # Let user pick one option, then recursively prompt for that
+                combo = QComboBox()
+                combo.addItems(prompt.get('options', []))
+                layout.addWidget(QLabel('Choose one option:'))
+                layout.addWidget(combo)
+                btn = QPushButton('OK')
+                btn.clicked.connect(dlg.accept)
+                layout.addWidget(btn)
+                dlg.setLayout(layout)
+                dlg.exec()
+                chosen = combo.currentText()
+                # Recursively parse and prompt for the chosen option
+                asi_sub, subprompt = self.parse_asi_string_with_prompt(chosen, prompt['source'])
+                for k, v in asi_sub.items():
+                    asi_result[k] += v
+                if subprompt:
+                    subresult = self.prompt_asi_choices([subprompt])
+                    for k, v in subresult.items():
+                        asi_result[k] += v
+            else:
+                # fallback: do nothing
+                pass
+        return asi_result
 def gui_main():
     app = QApplication(sys.argv)
     window = MagicItemGenerator()
