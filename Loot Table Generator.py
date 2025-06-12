@@ -870,15 +870,19 @@ class MagicItemGenerator(QMainWindow):
         self.asi_race_radio = QRadioButton('Race')
         self.asi_bg_radio = QRadioButton('Background')
         self.asi_both_radio = QRadioButton('Both')
+        self.asi_neither_radio = QRadioButton('Neither')
         self.asi_race_radio.setChecked(True)
         self.asi_group.addButton(self.asi_race_radio, 0)
         self.asi_group.addButton(self.asi_bg_radio, 1)
         self.asi_group.addButton(self.asi_both_radio, 2)
+        self.asi_group.addButton(self.asi_neither_radio, 3)
         asi_radio_bar.addWidget(self.asi_race_radio)
         asi_radio_bar.addWidget(self.asi_bg_radio)
         asi_radio_bar.addWidget(self.asi_both_radio)
+        asi_radio_bar.addWidget(self.asi_neither_radio)
         asi_radio_bar.addStretch()
         self.asi_group.buttonClicked.connect(self.update_stat_totals)
+        self.asi_group.buttonClicked.connect(self.on_asi_source_changed)
 
         # --- Stat Generation Parameters ---
         param_bar = QHBoxLayout()
@@ -933,10 +937,12 @@ class MagicItemGenerator(QMainWindow):
         char_layout.addLayout(stat_controls_bar)
         char_layout.addLayout(param_bar)
 
-        # Connect stat spinboxes to update totals
+        # Connect stat spinboxes to update totals (no prompt)
         for spin in self.stat_spinboxes:
             spin.valueChanged.connect(self.update_stat_totals)
-        self.update_stat_totals()
+        # Connect ASI radio group to prompt+update
+        self.asi_group.buttonClicked.disconnect()
+        self.asi_group.buttonClicked.connect(self.on_asi_source_changed)
 
         # Add the Character Creator tab to the tab widget
         self.tabs.addTab(char_tab, 'Character Creator')
@@ -944,7 +950,34 @@ class MagicItemGenerator(QMainWindow):
     def update_stat_totals(self):
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         values = [spin.value() for spin in self.stat_spinboxes]
-        # Determine which ASI sources to use
+        race = self.asi_race_radio.isChecked() or self.asi_both_radio.isChecked()
+        background = self.asi_bg_radio.isChecked() or self.asi_both_radio.isChecked()
+        asi = {k: 0 for k in stat_names}
+        if race:
+            race_name = self.race_combo.currentText()
+            for row in self.race_data:
+                if row['name'].strip() == race_name:
+                    asi_str = row.get('Ability Score Increase', '')
+                    asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Race')
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    break
+        if background:
+            bg_name = self.bg_combo.currentText()
+            for row in self.background_data:
+                if row['name'].strip() == bg_name:
+                    asi_str = row.get('ability', '')
+                    asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Background')
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    break
+        for i, stat in enumerate(stat_names):
+            self.stat_increase_labels[i].setText(str(asi.get(stat, 0)))
+            self.stat_total_labels[i].setText(str(values[i] + asi.get(stat, 0)))
+
+    def on_asi_source_changed(self):
+        # Only prompt for ASI choices when the user changes the ASI source (radio buttons)
+        stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         race = self.asi_race_radio.isChecked() or self.asi_both_radio.isChecked()
         background = self.asi_bg_radio.isChecked() or self.asi_both_radio.isChecked()
         asi = {k: 0 for k in stat_names}
@@ -971,12 +1004,11 @@ class MagicItemGenerator(QMainWindow):
                     if prompt:
                         asi_prompts.append(prompt)
                     break
-        # If any prompts, show dialog for user input
         if asi_prompts:
             asi_choices = self.prompt_asi_choices(asi_prompts)
             for k, v in asi_choices.items():
                 asi[k] += v
-        # Update labels
+        values = [spin.value() for spin in self.stat_spinboxes]
         for i, stat in enumerate(stat_names):
             self.stat_increase_labels[i].setText(str(asi.get(stat, 0)))
             self.stat_total_labels[i].setText(str(values[i] + asi.get(stat, 0)))
@@ -996,29 +1028,27 @@ class MagicItemGenerator(QMainWindow):
         while True:
             numbers.clear()
             for j in range(y):
-                total = 10
-                for i in range(x):
-                    randomNumber = random.randint(1, 6)
-                    if randomNumber % 2 == 0:
-                        total += randomNumber
-                    else:
-                        total -= randomNumber
-                if total < 1:
-                    total = 1
-                if total > 20:
-                    total = 20
+                # Standard 4d6 drop lowest
+                rolls = [random.randint(1, 6) for _ in range(x)]
+                total = sum(rolls) - min(rolls)
                 numbers.append(total)
-            mean = sum(numbers) / len(numbers)
-            if (mean < average_min or mean > average_max or
-                min(numbers) < lowest_stat_min or max(numbers) < lowest_stat_min or
-                min(numbers) > lowest_stat_max or max(numbers) > highest_stat_max):
-                tries += 1
-                if tries > 1000:
-                    break
-                continue
-            break
-        for i, val in enumerate(numbers):
-            self.stat_spinboxes[i].setValue(val)
+            tries += 1
+            if (
+                min(numbers) >= lowest_stat_min and
+                max(numbers) <= highest_stat_max and
+                min(numbers) <= lowest_stat_max and
+                max(numbers) >= highest_stat_min and
+                average_min <= sum(numbers) / y <= average_max
+            ):
+                break
+            if tries > 10000:
+                break
+        for i, spin in enumerate(self.stat_spinboxes):
+            spin.blockSignals(True)
+            spin.setValue(numbers[i])
+            spin.blockSignals(False)
+        # Auto-select 'Neither' for ASI source after generating stats
+        self.asi_neither_radio.setChecked(True)
         self.update_stat_totals()
 
     def handle_stat_swap(self, changed_idx, *args):
@@ -1101,7 +1131,6 @@ class MagicItemGenerator(QMainWindow):
         stat_values = [spin.value() for spin in self.stat_spinboxes]
         print(f"[DEBUG] Current stat values before ASI: {dict(zip(stat_names, stat_values))}")
         asi = {name: 0 for name in stat_names}
-        asi_prompts = []
         # Parse race ASI
         if race:
             race_name = self.race_combo.currentText()
@@ -1111,12 +1140,10 @@ class MagicItemGenerator(QMainWindow):
                     # Use correct field name for races.csv
                     asi_str = row.get('Ability Score Increase', '')
                     print(f"[DEBUG] Race ASI string: {asi_str}")
-                    asi_result, prompt = self.parse_asi_string_with_prompt(asi_str, 'Race')
-                    print(f"[DEBUG] Race ASI parsed: {asi_result}, prompt: {prompt}")
+                    asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Race')
+                    print(f"[DEBUG] Race ASI parsed: {asi_result}")
                     for k, v in asi_result.items():
                         asi[k] += v
-                    if prompt:
-                        asi_prompts.append(prompt)
                     break
         # Parse background ASI
         if background:
@@ -1127,21 +1154,11 @@ class MagicItemGenerator(QMainWindow):
                     # Use correct field name for backgrounds.csv
                     asi_str = row.get('ability', '')
                     print(f"[DEBUG] Background ASI string: {asi_str}")
-                    asi_result, prompt = self.parse_asi_string_with_prompt(asi_str, 'Background')
-                    print(f"[DEBUG] Background ASI parsed: {asi_result}, prompt: {prompt}")
+                    asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Background')
+                    print(f"[DEBUG] Background ASI parsed: {asi_result}")
                     for k, v in asi_result.items():
                         asi[k] += v
-                    if prompt:
-                        asi_prompts.append(prompt)
                     break
-        print(f"[DEBUG] ASI after parsing: {asi}")
-        # If any prompts, show dialog for user input
-        if asi_prompts:
-            asi_choices = self.prompt_asi_choices(asi_prompts)
-            print(f"[DEBUG] User ASI choices: {asi_choices}")
-            for k, v in asi_choices.items():
-                asi[k] += v
-        print(f"[DEBUG] Final ASI to apply: {asi}")
         # Add ASI to stats
         for i, stat in enumerate(stat_names):
             print(f"[DEBUG] Adding {asi.get(stat, 0)} to {stat} (was {stat_values[i]})")
@@ -1163,17 +1180,28 @@ class MagicItemGenerator(QMainWindow):
         asi_str = asi_str.strip()
         if not asi_str:
             return asi, None
-        # Direct assignments: e.g. "Cha +2, Dex +1"
-        direct_pattern = r'(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA|CHA|CON|WIS|INT)[^\d+-]*([+-]?\d+)'  # e.g. STR +2
+        # --- Minor issue 1 fix: handle multiple comma-separated bonuses for backgrounds ---
+        # Direct assignments: e.g. "Cha +2, Dex +1" or "+1 DEX, +1 INT"
+        # --- Fix: handle '+1 wis, +1 cha' and similar forms robustly ---
+        # Accept forms like '+1 wis, +1 cha', 'wis +1, cha +1', etc.
+        direct_pattern = r'([+-]?\d+)\s*(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA)|' \
+                        r'(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA)\s*([+-]?\d+)'
         direct_matches = re.findall(direct_pattern, asi_str.upper())
         if direct_matches:
-            for stat, val in direct_matches:
+            for m in direct_matches:
+                # m is a tuple of 4 elements, only one pair will be filled
+                if m[0] and m[1]:
+                    val, stat = m[0], m[1]
+                elif m[2] and m[3]:
+                    stat, val = m[2], m[3]
+                else:
+                    continue
                 stat = stat_names.get(stat, stat)
-                try:
-                    asi[stat] += int(val)
-                except Exception:
-                    pass
-            # If there are no choose/points/option keywords, return direct
+                if stat in asi:
+                    try:
+                        asi[stat] += int(val)
+                    except Exception:
+                        pass
             if not re.search(r'choose|point|option|among|other|one of', asi_str, re.IGNORECASE):
                 return asi, None
         # Handle choose/points/option/among/other/one of
@@ -1184,15 +1212,10 @@ class MagicItemGenerator(QMainWindow):
         #   "3 points among Wis, Cha, Int"
         prompt = {'type': None, 'source': source_label, 'raw': asi_str}
         if re.search(r'choose one of', asi_str, re.IGNORECASE):
-            prompt['type'] = 'choose_one_of'
-            # Extract options
-            options = re.findall(r'\(a\)(.*?)\(b\)(.*)', asi_str, re.IGNORECASE)
-            if options:
-                prompt['options'] = [options[0][1].strip(), options[0][3].strip()]
-            else:
-                # fallback: split by (a), (b), etc.
-                parts = re.split(r'\([a-z]\)', asi_str, flags=re.IGNORECASE)
-                prompt['options'] = [p.strip() for p in parts if p and not re.match(r'^[a-z]$', p, re.IGNORECASE)]
+            prompt['type'] = 'points_among'
+            prompt['points'] = 3
+            prompt['allowed'] = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+            return asi, prompt
         elif re.search(r'choose any', asi_str, re.IGNORECASE):
             prompt['type'] = 'choose_any'
             # e.g. "Choose any +2, Choose any other +1"
