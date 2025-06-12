@@ -10,6 +10,7 @@ import os
 import csv
 import random
 import difflib
+import functools
 
 RARITY_VALUES = {
     'common': 50,
@@ -824,8 +825,61 @@ class MagicItemGenerator(QMainWindow):
         self.bg_combo.currentTextChanged.connect(self.update_bg_info)
         self.update_bg_info(self.bg_combo.currentText())
 
-        # Placeholder for future character creation UI
+        # --- Stat Generation Section ---
+        stat_gen_bar = QHBoxLayout()
+        stat_label = QLabel('Stat Generation:')
+        stat_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
+        stat_gen_bar.addWidget(stat_label)
+        self.stat_spinboxes = []
+        self.stat_combos = []
+        stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+        for i, stat in enumerate(stat_names):
+            spin = QSpinBox()
+            spin.setRange(1, 20)
+            spin.setValue(10)
+            combo = QComboBox()
+            combo.addItems(stat_names)  # Each combo gets its own independent list
+            combo.setCurrentIndex(i)
+            self.stat_spinboxes.append(spin)
+            self.stat_combos.append(combo)
+            stat_gen_bar.addWidget(spin)
+            stat_gen_bar.addWidget(combo)
+        stat_gen_bar.addStretch()
+        # Add to the right of backgrounds (use a horizontal layout for backgrounds and stat gen)
+        bg_stat_row = QHBoxLayout()
+        bg_stat_row.addLayout(bg_bar)
+        bg_stat_row.addSpacing(30)
+        bg_stat_row.addLayout(stat_gen_bar)
+        char_layout.addLayout(bg_stat_row)
+
+        # Connect stat dropdowns to enforce unique selection and swap logic
+        for idx, combo in enumerate(self.stat_combos):
+            combo.currentIndexChanged.connect(functools.partial(self.handle_stat_swap, idx))
+        # No call to update_stat_dropdowns here
+        # ...existing code...
+
         self.tabs.addTab(char_tab, 'Character Creator')
+
+    def handle_stat_swap(self, changed_idx, *args):
+        changed_combo = self.stat_combos[changed_idx]
+        selected_idx = changed_combo.currentIndex()
+        # Check for duplicate in other combos
+        for i, combo in enumerate(self.stat_combos):
+            if i != changed_idx and combo.currentIndex() == selected_idx:
+                # Swap the indices
+                combo.blockSignals(True)
+                changed_combo.blockSignals(True)
+                combo.setCurrentIndex(self.stat_combos[changed_idx].property('lastIndex') if combo.property('lastIndex') is not None else changed_idx)
+                changed_combo.setCurrentIndex(selected_idx)
+                combo.blockSignals(False)
+                changed_combo.blockSignals(False)
+                break
+        # Store the last index for each combo
+        for i, combo in enumerate(self.stat_combos):
+            combo.setProperty('lastIndex', combo.currentIndex())
+
+    def update_stat_dropdowns(self):
+        pass  # No disabling needed anymore
 
     def update_race_info(self, race_name):
         # Find the first matching race row
