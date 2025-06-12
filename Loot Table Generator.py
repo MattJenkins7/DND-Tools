@@ -1,0 +1,871 @@
+import sys
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
+    QLabel, QPushButton, QLineEdit, QComboBox, QTableWidget, QTableWidgetItem, QTextEdit,
+    QFileDialog, QMessageBox, QSpinBox, QStatusBar, QAbstractItemView, QHeaderView
+)
+from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QKeySequence
+import os
+import csv
+import random
+import difflib
+
+RARITY_VALUES = {
+    'common': 50,
+    'uncommon': 325,
+    'rare': 1250,
+    'very rare': 3000,
+    'legendary': 30000,
+    'artifact': 60000,
+}
+
+LEVEL_RARITY_TABLE = {
+    1: {'common': 6, 'uncommon': 2, 'rare': 0, 'very rare': 0, 'legendary': 0},
+    2: {'common': 8, 'uncommon': 3, 'rare': 0, 'very rare': 0, 'legendary': 0},
+    3: {'common': 9, 'uncommon': 5, 'rare': 1, 'very rare': 0, 'legendary': 0},
+    4: {'common': 10, 'uncommon': 8, 'rare': 1, 'very rare': 0, 'legendary': 0},
+    5: {'common': 10, 'uncommon': 13, 'rare': 2, 'very rare': 1, 'legendary': 0},
+    6: {'common': 10, 'uncommon': 14, 'rare': 3, 'very rare': 1, 'legendary': 0},
+    7: {'common': 10, 'uncommon': 15, 'rare': 4, 'very rare': 1, 'legendary': 0},
+    8: {'common': 10, 'uncommon': 16, 'rare': 5, 'very rare': 2, 'legendary': 0},
+    9: {'common': 10, 'uncommon': 17, 'rare': 6, 'very rare': 2, 'legendary': 1},
+    10: {'common': 8, 'uncommon': 16, 'rare': 8, 'very rare': 2, 'legendary': 1},
+    11: {'common': 7, 'uncommon': 13, 'rare': 10, 'very rare': 4, 'legendary': 1},
+    12: {'common': 5, 'uncommon': 10, 'rare': 11, 'very rare': 6, 'legendary': 1},
+    13: {'common': 5, 'uncommon': 9, 'rare': 11, 'very rare': 6, 'legendary': 1},
+    14: {'common': 4, 'uncommon': 7, 'rare': 11, 'very rare': 9, 'legendary': 1},
+    15: {'common': 3, 'uncommon': 6, 'rare': 11, 'very rare': 11, 'legendary': 2},
+    16: {'common': 3, 'uncommon': 5, 'rare': 11, 'very rare': 11, 'legendary': 2},
+    17: {'common': 2, 'uncommon': 3, 'rare': 10, 'very rare': 12, 'legendary': 2},
+    18: {'common': 0, 'uncommon': 2, 'rare': 10, 'very rare': 13, 'legendary': 3},
+    19: {'common': 0, 'uncommon': 2, 'rare': 10, 'very rare': 14, 'legendary': 3},
+    20: {'common': 0, 'uncommon': 2, 'rare': 10, 'very rare': 15, 'legendary': 3},
+}
+
+GEMSTONE_VALUE_LIST = {
+    'AMETHYST': {'Flawless': 500, 'Brilliant': 400, 'Cut': 300, 'Raw': 200, 'Rough': 100},
+    'AQUAMARINE': {'Flawless': 400, 'Brilliant': 300, 'Cut': 200, 'Raw': 100, 'Rough': 50},
+    'CITRINE': {'Flawless': 300, 'Brilliant': 250, 'Cut': 200, 'Raw': 150, 'Rough': 100},
+    'GARNET': {'Flawless': 200, 'Brilliant': 150, 'Cut': 100, 'Raw': 75, 'Rough': 50},
+    'ONYX': {'Flawless': 300, 'Brilliant': 250, 'Cut': 200, 'Raw': 150, 'Rough': 100},
+    'OPAL': {'Flawless': 400, 'Brilliant': 350, 'Cut': 300, 'Raw': 250, 'Rough': 200},
+    'PEARL': {'Flawless': 500, 'Brilliant': 400, 'Cut': 300, 'Raw': 200, 'Rough': 100},
+    'RUBY': {'Flawless': 700, 'Brilliant': 600, 'Cut': 500, 'Raw': 400, 'Rough': 300},
+    'SAPPHIRE': {'Flawless': 800, 'Brilliant': 700, 'Cut': 600, 'Raw': 500, 'Rough': 400},
+    'TOPAZ': {'Flawless': 100, 'Brilliant': 75, 'Cut': 50, 'Raw': 20, 'Rough': 5},
+    'TOURMALINE': {'Flawless': 500, 'Brilliant': 400, 'Cut': 300, 'Raw': 200, 'Rough': 100},
+    'DIAMOND': {'Flawless': 1000, 'Brilliant': 800, 'Cut': 700, 'Raw': 500, 'Rough': 300},
+    'EMERALD': {'Flawless': 500, 'Brilliant': 400, 'Cut': 300, 'Raw': 200, 'Rough': 100},
+    'JADE': {'Flawless': 400, 'Brilliant': 350, 'Cut': 300, 'Raw': 250, 'Rough': 200},
+    'JASPER': {'Flawless': 300, 'Brilliant': 250, 'Cut': 200, 'Raw': 150, 'Rough': 100},
+    'PERIDOT': {'Flawless': 300, 'Brilliant': 250, 'Cut': 200, 'Raw': 150, 'Rough': 100},
+    'SPINEL': {'Flawless': 600, 'Brilliant': 500, 'Cut': 400, 'Raw': 300, 'Rough': 200},
+    'ZIRCON': {'Flawless': 500, 'Brilliant': 400, 'Cut': 300, 'Raw': 200, 'Rough': 100},
+    'AMBER': {'Flawless': 300, 'Brilliant': 250, 'Cut': 200, 'Raw': 150, 'Rough': 100},
+    'MOONSTONE': {'Flawless': 400, 'Brilliant': 350, 'Cut': 300, 'Raw': 250, 'Rough': 200},
+    'TURQUOISE': {'Flawless': 200, 'Brilliant': 150, 'Cut': 100, 'Raw': 75, 'Rough': 50},
+}
+
+RARITY_LIST = ['common', 'uncommon', 'rare', 'very rare', 'legendary', 'artifact']
+
+def get_rarity(row, header=None):
+    idx = 3
+    if header:
+        for i, col in enumerate(header):
+            if col.strip().lower() == 'rarity':
+                idx = i
+                break
+    rarity = row[idx].strip().lower()
+    if rarity in RARITY_LIST:
+        return rarity
+    for r in RARITY_LIST:
+        if r in rarity:
+            return r
+    return 'unknown'
+
+def filter_items_by_rarity(items, rarity):
+    return [item for item in items if get_rarity(item) == rarity]
+
+def get_random_rarity_distribution(level):
+    rarity_caps = LEVEL_RARITY_TABLE.get(level, LEVEL_RARITY_TABLE[1])
+    rarity_dist = {}
+    for rarity, cap in rarity_caps.items():
+        if cap > 0:
+            rarity_dist[rarity] = random.randint(0, cap)
+        else:
+            rarity_dist[rarity] = 0
+    return rarity_dist
+
+def select_items_by_level(items, level):
+    rarity_counts = get_random_rarity_distribution(level)
+    selected = []
+    for rarity, count in rarity_counts.items():
+        pool = filter_items_by_rarity(items, rarity)
+        if pool and count > 0:
+            selected.extend(random.sample(pool, min(count, len(pool))))
+    return selected
+
+def get_item_value(rarity):
+    ranges = {
+        'common': (40, 60),
+        'uncommon': (150, 500),
+        'rare': (500, 2000),
+        'very rare': (1000, 5000),
+        'legendary': (10000, 50000),
+        'artifact': (50000, 70000),
+    }
+    low, high = ranges.get(rarity, (0, 0))
+    return random.randint(low, high)
+
+def write_csv_shop(header, data, csv_path):
+    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(header)
+        for row in data:
+            writer.writerow(row)
+
+def write_csv_loot(header, data, csv_path):
+    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(header)
+        for row in data:
+            writer.writerow(row)
+
+def run_generation(mode, method, out_name, max_items, level=None, value=None):
+    csv_path = 'magic items.csv'
+    output_dir = os.path.join(os.path.dirname(__file__), 'Generated Loot Tables')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    out_path = os.path.join(output_dir, f'{out_name}.csv')
+    with open(csv_path, newline='', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        rows = list(reader)
+        if not rows:
+            raise Exception('No data found.')
+        header = rows[0]
+        data = rows[1:]
+    # Find column indices by header
+    name_idx = None
+    rarity_idx = None
+    type_idx = None
+    attunement_idx = None
+    text_idx = None
+    for i, col in enumerate(header):
+        col_l = col.strip().lower()
+        if col_l == 'name':
+            name_idx = i
+        elif col_l == 'rarity':
+            rarity_idx = i
+        elif col_l == 'type':
+            type_idx = i
+        elif col_l == 'attunement':
+            attunement_idx = i
+        elif col_l == 'text':
+            text_idx = i
+    if None in [name_idx, rarity_idx, type_idx, attunement_idx, text_idx]:
+        raise Exception('CSV missing required columns.')
+    if method == 'level':
+        selected = select_items_by_level(data, level)
+    elif method == 'value':
+        selected = select_items_by_value(data, value)
+    else:
+        raise Exception('Invalid method.')
+    if len(selected) > max_items:
+        selected = random.sample(selected, max_items)
+    if mode == 'Shop':
+        shop_header = ['Name', 'Rarity', 'Type', 'Value', 'Attunement', 'Text']
+        shop_data = []
+        for row in selected:
+            name = row[name_idx] if name_idx < len(row) else ''
+            rarity = row[rarity_idx].strip().lower() if rarity_idx < len(row) else 'unknown'
+            typ = row[type_idx] if type_idx < len(row) and row[type_idx].strip() else 'Unknown'
+            value = get_item_value(rarity)
+            attunement = row[attunement_idx] if attunement_idx < len(row) else ''
+            text = row[text_idx] if text_idx < len(row) else ''
+            shop_data.append([name, rarity, typ, value, attunement, text])
+        write_csv_shop(shop_header, shop_data, out_path)
+        return f'Shop inventory saved to {out_path}'
+    elif mode == 'Loot':
+        loot_header = ['Name', 'Rarity', 'Type', 'Attunement', 'Text']
+        loot_data = []
+        for row in selected:
+            name = row[name_idx] if name_idx < len(row) else ''
+            rarity = row[rarity_idx].strip().lower() if rarity_idx < len(row) else 'unknown'
+            typ = row[type_idx] if type_idx < len(row) and row[type_idx].strip() else 'Unknown'
+            attunement = row[attunement_idx] if attunement_idx < len(row) else ''
+            text = row[text_idx] if text_idx < len(row) else ''
+            loot_data.append([name, rarity, typ, attunement, text])
+        write_csv_loot(loot_header, loot_data, out_path)
+        return f'Loot table saved to {out_path}'
+    else:
+        raise Exception('Invalid mode.')
+
+def select_items_by_value(items, total_value):
+    selected = []
+    pool = items[:]
+    random.shuffle(pool)
+    current_value = 0
+    while pool and current_value < total_value:
+        item = pool.pop()
+        rarity = get_rarity(item)
+        value = get_item_value(rarity)
+        if current_value + value <= total_value:
+            selected.append(item)
+            current_value += value
+        elif not selected:
+            selected.append(item)
+            break
+    return selected
+
+class MagicItemGenerator(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Magic Item Generator')
+        self.resize(1000, 700)
+        self.tabs = QTabWidget()
+        self.setCentralWidget(self.tabs)
+        self.csv_data = {'header': [], 'rows': [], 'file_path': None}
+        self.init_generator_tab()
+        self.init_viewer_tab()
+        self.init_character_creator_tab()
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
+    def init_generator_tab(self):
+        gen_tab = QWidget()
+        gen_layout = QGridLayout()
+        gen_tab.setLayout(gen_layout)
+        self.tabs.addTab(gen_tab, 'Generator')
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(['Shop', 'Loot'])
+        gen_layout.addWidget(QLabel('Mode:'), 0, 0)
+        gen_layout.addWidget(self.mode_combo, 0, 1)
+        self.method_combo = QComboBox()
+        self.method_combo.addItems(['By character level', 'By total gold value'])
+        gen_layout.addWidget(QLabel('Loot Generation Method:'), 1, 0)
+        gen_layout.addWidget(self.method_combo, 1, 1)
+        self.out_name_edit = QLineEdit()
+        gen_layout.addWidget(QLabel('Output file name (no .csv):'), 2, 0)
+        gen_layout.addWidget(self.out_name_edit, 2, 1)
+        self.max_items_spin = QSpinBox()
+        self.max_items_spin.setRange(1, 1000)
+        self.max_items_spin.setValue(10)
+        gen_layout.addWidget(QLabel('Max items:'), 3, 0)
+        gen_layout.addWidget(self.max_items_spin, 3, 1)
+        self.level_spin = QSpinBox()
+        self.level_spin.setRange(1, 20)
+        self.level_spin.setValue(1)
+        gen_layout.addWidget(QLabel('Character level (1-20):'), 4, 0)
+        gen_layout.addWidget(self.level_spin, 4, 1)
+        self.value_spin = QSpinBox()
+        self.value_spin.setRange(1, 1000000)
+        self.value_spin.setValue(1000)
+        gen_layout.addWidget(QLabel('Total gold value (GP):'), 5, 0)
+        gen_layout.addWidget(self.value_spin, 5, 1)
+        self.method_combo.currentIndexChanged.connect(self.update_fields)
+        self.update_fields()
+        generate_btn = QPushButton('Generate')
+        generate_btn.clicked.connect(self.on_generate)
+        gen_layout.addWidget(generate_btn, 6, 0, 1, 2)
+
+    def update_fields(self):
+        if self.method_combo.currentIndex() == 0:
+            self.level_spin.setEnabled(True)
+            self.value_spin.setEnabled(False)
+        else:
+            self.level_spin.setEnabled(False)
+            self.value_spin.setEnabled(True)
+
+    def on_generate(self):
+        mode = self.mode_combo.currentText()
+        method = 'level' if self.method_combo.currentIndex() == 0 else 'value'
+        out_name = self.out_name_edit.text().strip()
+        max_items = self.max_items_spin.value()
+        level = self.level_spin.value()
+        value = self.value_spin.value()
+        if not out_name or not max_items or (method == 'level' and not level) or (method == 'value' and not value):
+            QMessageBox.critical(self, 'Error', 'Please fill in all required fields.')
+            return
+        try:
+            if method == 'level':
+                msg = run_generation(mode, method, out_name, max_items, level=level)
+            else:
+                msg = run_generation(mode, method, out_name, max_items, value=value)
+            QMessageBox.information(self, 'Success', msg)
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', str(e))
+
+    def init_viewer_tab(self):
+        viewer_tab = QWidget()
+        viewer_layout = QVBoxLayout()
+        viewer_tab.setLayout(viewer_layout)
+        self.tabs.addTab(viewer_tab, 'CSV Viewer')
+
+        # --- Top bar: Open, Save, Delete, Dark Mode ---
+        top_bar = QHBoxLayout()
+        open_btn = QPushButton('Open CSV File')
+        open_btn.clicked.connect(self.load_csv)
+        save_btn = QPushButton('Save CSV')
+        save_btn.clicked.connect(self.save_csv)
+        del_btn = QPushButton('Delete Selected Item(s)')
+        del_btn.clicked.connect(self.delete_selected)
+        dark_btn = QPushButton('Toggle Dark Mode')
+        dark_btn.setCheckable(True)
+        dark_btn.toggled.connect(self.toggle_dark_mode)
+        top_bar.addWidget(open_btn)
+        top_bar.addWidget(save_btn)
+        top_bar.addWidget(del_btn)
+        top_bar.addWidget(dark_btn)
+        top_bar.addStretch()
+        viewer_layout.addLayout(top_bar)
+
+        # --- Search/filter bar ---
+        filter_bar = QHBoxLayout()
+        filter_label = QLabel('Search:')
+        self.filter_edit = QLineEdit()
+        self.filter_edit.setPlaceholderText('Type to filter...')
+        self.filter_edit.textChanged.connect(self.update_table)
+        clear_filter_btn = QPushButton('Clear')
+        clear_filter_btn.clicked.connect(lambda: self.filter_edit.setText(''))
+        filter_bar.addWidget(filter_label)
+        filter_bar.addWidget(self.filter_edit)
+        filter_bar.addWidget(clear_filter_btn)
+        filter_bar.addStretch()
+        viewer_layout.addLayout(filter_bar)
+
+        # --- Table ---
+        self.table = QTableWidget()
+        self.table.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.SelectedClicked)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.table.itemSelectionChanged.connect(self.update_preview)
+        self.table.itemChanged.connect(self.on_table_item_changed)
+        self.table.setSortingEnabled(True)
+        self.table.setAlternatingRowColors(True)
+        self.table.setStyleSheet('QTableWidget { font-size: 13pt; font-family: Segoe UI, Arial, sans-serif; } QHeaderView::section { padding: 8px; font-weight: bold; } QTableWidget::item { padding: 6px; }')
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        viewer_layout.addWidget(self.table)
+
+        # --- Add Potions/Gemstones ---
+        add_pg_bar = QHBoxLayout()
+        add_pg_bar.addWidget(QLabel('Add Potions/Gemstones:'))
+        add_pg_bar.addWidget(QLabel('Number of Potions:'))
+        self.num_potions_spin = QSpinBox()
+        self.num_potions_spin.setRange(1, 100)
+        self.num_potions_spin.setValue(1)
+        add_pg_bar.addWidget(self.num_potions_spin)
+        add_potion_btn = QPushButton('Add Potions')
+        add_potion_btn.clicked.connect(self.add_potions)
+        add_pg_bar.addWidget(add_potion_btn)
+        add_pg_bar.addWidget(QLabel('Gemstone Value:'))
+        self.gem_value_spin = QSpinBox()
+        self.gem_value_spin.setRange(1, 100000)
+        self.gem_value_spin.setValue(100)
+        add_pg_bar.addWidget(self.gem_value_spin)
+        add_gem_btn = QPushButton('Add Gemstones')
+        add_gem_btn.clicked.connect(self.add_gemstones)
+        add_pg_bar.addWidget(add_gem_btn)
+        add_pg_bar.addStretch()
+        viewer_layout.addLayout(add_pg_bar)
+
+        # --- Add Item by Rarity/Name ---
+        add_item_bar = QHBoxLayout()
+        add_item_bar.addWidget(QLabel('Add Item by Rarity/Name:'))
+        self.additem_rarity_combo = QComboBox()
+        self.additem_rarity_combo.addItems([r.title() for r in RARITY_LIST])
+        add_item_bar.addWidget(self.additem_rarity_combo)
+        add_item_bar.addWidget(QLabel('(optional) Name:'))
+        self.additem_name_edit = QLineEdit()
+        add_item_bar.addWidget(self.additem_name_edit)
+        additem_btn = QPushButton('Add Item')
+        additem_btn.clicked.connect(self.add_item_by_rarity)
+        add_item_bar.addWidget(additem_btn)
+        add_item_bar.addStretch()
+        viewer_layout.addLayout(add_item_bar)
+
+        # --- Add Custom Item ---
+        add_custom_bar = QGridLayout()
+        add_custom_bar.addWidget(QLabel('Add Custom Item:'), 0, 0)
+        add_custom_bar.addWidget(QLabel('Name:'), 0, 1)
+        self.custom_name_edit = QLineEdit()
+        add_custom_bar.addWidget(self.custom_name_edit, 0, 2)
+        add_custom_bar.addWidget(QLabel('Type:'), 0, 3)
+        self.custom_type_edit = QLineEdit()
+        add_custom_bar.addWidget(self.custom_type_edit, 0, 4)
+        add_custom_bar.addWidget(QLabel('Rarity:'), 0, 5)
+        self.custom_rarity_combo = QComboBox()
+        self.custom_rarity_combo.addItems([r.title() for r in RARITY_LIST])
+        add_custom_bar.addWidget(self.custom_rarity_combo, 0, 6)
+        add_custom_bar.addWidget(QLabel('Text:'), 1, 1)
+        self.custom_text_edit = QLineEdit()
+        add_custom_bar.addWidget(self.custom_text_edit, 1, 2, 1, 3)
+        add_custom_bar.addWidget(QLabel('Value:'), 1, 5)
+        self.custom_value_edit = QLineEdit()
+        add_custom_bar.addWidget(self.custom_value_edit, 1, 6)
+        addcustom_btn = QPushButton('Add Custom Item')
+        addcustom_btn.clicked.connect(self.add_custom_item)
+        add_custom_bar.addWidget(addcustom_btn, 0, 7, 2, 1)
+        viewer_layout.addLayout(add_custom_bar)
+
+        # --- Text Preview ---
+        self.preview_label = QLabel('Text Preview:')
+        self.preview_label.setStyleSheet('font-weight: bold; font-size: 12pt; margin-top: 8px;')
+        viewer_layout.addWidget(self.preview_label)
+        self.preview_text = QTextEdit()
+        self.preview_text.setReadOnly(True)
+        self.preview_text.setStyleSheet('font-size: 12pt; font-family: Segoe UI, Arial, sans-serif; background: #f8f8f8; padding: 8px;')
+        viewer_layout.addWidget(self.preview_text)
+
+        # --- Keyboard shortcuts ---
+        self.table.installEventFilter(self)
+        self.shortcut_actions = {
+            (Qt.ControlModifier, Qt.Key_S): self.save_csv,
+            (Qt.NoModifier, Qt.Key_Delete): self.delete_selected,
+            (Qt.ControlModifier, Qt.Key_F): lambda: self.filter_edit.setFocus(),
+        }
+
+    def eventFilter(self, obj, event):
+        if obj is self.table and event.type() == QEvent.KeyPress:
+            key = event.key()
+            mods = event.modifiers()
+            for (mod, k), action in self.shortcut_actions.items():
+                if mods == mod and key == k:
+                    action()
+                    return True
+        return super().eventFilter(obj, event)
+
+    def load_csv(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, 'Open CSV File', '', 'CSV Files (*.csv)')
+        if not file_path:
+            return
+        try:
+            with open(file_path, newline='', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                rows = list(reader)
+                if not rows:
+                    QMessageBox.critical(self, 'Error', 'CSV file is empty.')
+                    return
+                header = rows[0]
+                data = rows[1:]
+            self.csv_data['header'] = header
+            self.csv_data['rows'] = data
+            self.csv_data['file_path'] = file_path
+            self.update_table()
+            self.status_bar.showMessage(f"Loaded {file_path} ({len(data)} items)")
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Failed to load CSV: {e}')
+            self.status_bar.showMessage('Failed to load CSV.')
+
+    def save_csv(self):
+        if not self.csv_data['file_path'] or not self.csv_data['header']:
+            QMessageBox.warning(self, 'Warning', 'No CSV loaded.')
+            return
+        try:
+            with open(self.csv_data['file_path'], 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(self.csv_data['header'])
+                for row in self.csv_data['rows']:
+                    writer.writerow(row)
+            self.status_bar.showMessage('CSV saved.')
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Failed to save CSV: {e}')
+            self.status_bar.showMessage('Failed to save CSV.')
+
+    def update_table(self):
+        header = self.csv_data.get('header', [])
+        rows = self.csv_data.get('rows', [])
+        query = self.filter_edit.text().strip().lower()
+        if query:
+            filtered = [row for row in rows if any(query in str(cell).lower() for cell in row)]
+        else:
+            filtered = rows
+        self.filtered_rows = filtered
+        self.table.blockSignals(True)
+        self.table.setColumnCount(len(header))
+        self.table.setHorizontalHeaderLabels(header)
+        self.table.setRowCount(len(filtered))
+        for i, row in enumerate(filtered):
+            for j, val in enumerate(row):
+                item = QTableWidgetItem(val)
+                self.table.setItem(i, j, item)
+        self.table.blockSignals(False)
+        self.status_bar.showMessage(f"{len(filtered)} / {len(rows)} items shown.")
+        self.update_preview()
+
+    def update_preview(self):
+        selected = self.table.selectedItems()
+        if not selected or not self.filtered_rows:
+            self.preview_text.setPlainText('')
+            return
+        row_idx = selected[0].row()
+        row = self.filtered_rows[row_idx]
+        text_idx = None
+        for i, col in enumerate(self.csv_data['header']):
+            if col.strip().lower() == 'text':
+                text_idx = i
+                break
+        if text_idx is not None and row[text_idx]:
+            self.preview_text.setPlainText(row[text_idx])
+        else:
+            self.preview_text.setPlainText('')
+
+    def on_table_item_changed(self, item):
+        # Update the underlying data when a cell is edited
+        row_idx = item.row()
+        col_idx = item.column()
+        if 0 <= row_idx < len(self.filtered_rows):
+            # Find the actual row in self.csv_data['rows']
+            actual_row = self.filtered_rows[row_idx]
+            actual_idx = self.csv_data['rows'].index(actual_row)
+            self.csv_data['rows'][actual_idx][col_idx] = item.text()
+            self.status_bar.showMessage('Cell updated.')
+
+    def delete_selected(self):
+        selected = self.table.selectionModel().selectedRows()
+        if not selected:
+            return
+        idxs = sorted([s.row() for s in selected], reverse=True)
+        count = 0
+        for idx in idxs:
+            if 0 <= idx < len(self.filtered_rows):
+                actual_row = self.filtered_rows[idx]
+                if actual_row in self.csv_data['rows']:
+                    self.csv_data['rows'].remove(actual_row)
+                    count += 1
+        self.update_table()
+        self.status_bar.showMessage(f"Deleted {count} item(s).")
+
+    def add_potions(self):
+        if not self.csv_data['header']:
+            QMessageBox.warning(self, 'Warning', 'No CSV loaded.')
+            return
+        n = self.num_potions_spin.value()
+        try:
+            with open('magic items.csv', newline='', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                magic_header = next(reader)
+                magic_data = list(reader)
+        except Exception:
+            QMessageBox.critical(self, 'Error', 'Could not load magic items.csv.')
+            return
+        # Find column indices by header
+        def col_idx(col_name):
+            for i, col in enumerate(magic_header):
+                if col.strip().lower() == col_name:
+                    return i
+            return None
+        type_idx = col_idx('type') or 4
+        rarity_idx = col_idx('rarity') or 3
+        name_idx = col_idx('name') or 0
+        attune_idx = col_idx('attunement') or 5
+        text_idx = col_idx('text') or 11
+        potions = [row for row in magic_data if type_idx < len(row) and 'potion' in row[type_idx].lower() and rarity_idx < len(row) and row[rarity_idx].strip().lower() in ['common', 'uncommon']]
+        if not potions:
+            QMessageBox.warning(self, 'Warning', 'No potions found in magic items.csv.')
+            return
+        chosen = random.sample(potions, min(n, len(potions)))
+        for row in chosen:
+            new_row = []
+            rarity_val = row[rarity_idx].strip().lower() if rarity_idx < len(row) else ''
+            for col in self.csv_data['header']:
+                col_l = col.strip().lower()
+                if col_l == 'name':
+                    new_row.append(row[name_idx] if name_idx < len(row) else '')
+                elif col_l == 'rarity':
+                    new_row.append(row[rarity_idx] if rarity_idx < len(row) else '')
+                elif col_l == 'type':
+                    new_row.append(row[type_idx] if type_idx < len(row) and row[type_idx].strip() else 'Unknown')
+                elif col_l == 'text':
+                    new_row.append(row[text_idx] if text_idx < len(row) else '')
+                elif col_l == 'value':
+                    new_row.append(str(get_item_value(rarity_val)))
+                elif col_l == 'attunement':
+                    new_row.append(row[attune_idx] if attune_idx < len(row) else '')
+                else:
+                    new_row.append('')
+            self.csv_data['rows'].append(new_row)
+        self.update_table()
+        self.status_bar.showMessage(f'Added {len(chosen)} potion(s).')
+
+    def add_gemstones(self):
+        if not self.csv_data['header']:
+            QMessageBox.warning(self, 'Warning', 'No CSV loaded.')
+            return
+        target_value = self.gem_value_spin.value()
+        min_total = int(target_value * 0.9)
+        max_total = int(target_value * 1.1)
+        total = 0
+        gems = []
+        tries = 0
+        import random
+        while total < min_total and tries < 1000:
+            gem = random.choice(list(GEMSTONE_VALUE_LIST.keys()))
+            quality = random.choice(list(GEMSTONE_VALUE_LIST[gem].keys()))
+            value = GEMSTONE_VALUE_LIST[gem][quality]
+            if total + value > max_total:
+                tries += 1
+                continue
+            gems.append((gem, quality, value))
+            total += value
+            tries += 1
+        if not gems:
+            QMessageBox.warning(self, 'Warning', 'Could not generate gemstones for value.')
+            return
+        for gem, quality, value in gems:
+            row = ['Gemstone', quality, gem, str(value), '', f'{quality} {gem} ({value} gp)']
+            # Pad to match header
+            while len(row) < len(self.csv_data['header']):
+                row.append('')
+            self.csv_data['rows'].append(row)
+        self.update_table()
+        self.status_bar.showMessage(f'Added {len(gems)} gemstone(s) totaling {total} gp.')
+
+    def fuzzy_match(self, query, candidates):
+        matches = [c for c in candidates if query.lower() in c.lower()]
+        if matches:
+            return matches[0]
+        try:
+            import difflib
+            close = difflib.get_close_matches(query, candidates, n=1)
+            return close[0] if close else None
+        except ImportError:
+            return None
+
+    def add_item_by_rarity(self):
+        if not self.csv_data['header']:
+            QMessageBox.warning(self, 'Warning', 'No CSV loaded.')
+            return
+        rarity = self.additem_rarity_combo.currentText().strip().lower()
+        name_query = self.additem_name_edit.text().strip()
+        try:
+            with open('magic items.csv', newline='', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                magic_header = next(reader)
+                magic_data = list(reader)
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Could not load magic items.csv: {e}')
+            return
+        # Find column indices by header
+        def col_idx(col_name):
+            for i, col in enumerate(magic_header):
+                if col.strip().lower() == col_name:
+                    return i
+            return None
+        name_idx = col_idx('name') or 0
+        rarity_idx = col_idx('rarity') or 3
+        type_idx = col_idx('type') or 4
+        attune_idx = col_idx('attunement') or 5
+        text_idx = col_idx('text') or 11
+        pool = [row for row in magic_data if rarity_idx < len(row) and get_rarity(row, magic_header) == rarity]
+        if not pool:
+            QMessageBox.warning(self, 'Warning', f'No items of rarity {rarity.title()} found.')
+            return
+        if name_query:
+            names = [row[name_idx] for row in pool if name_idx < len(row)]
+            match = self.fuzzy_match(name_query, names)
+            if match:
+                row = next(row for row in pool if name_idx < len(row) and row[name_idx] == match)
+            else:
+                QMessageBox.warning(self, 'Warning', f'No item found matching "{name_query}".')
+                return
+        else:
+            row = random.choice(pool)
+        new_row = []
+        rarity_val = row[rarity_idx].strip().lower() if rarity_idx < len(row) else ''
+        for col in self.csv_data['header']:
+            col_l = col.strip().lower()
+            if col_l == 'name':
+                new_row.append(row[name_idx] if name_idx < len(row) else '')
+            elif col_l == 'rarity':
+                new_row.append(row[rarity_idx] if rarity_idx < len(row) else '')
+            elif col_l == 'type':
+                new_row.append(row[type_idx] if type_idx < len(row) and row[type_idx].strip() else 'Unknown')
+            elif col_l == 'text':
+                new_row.append(row[text_idx] if text_idx < len(row) else '')
+            elif col_l == 'value':
+                new_row.append(str(get_item_value(rarity_val)))
+            elif col_l == 'attunement':
+                new_row.append(row[attune_idx] if attune_idx < len(row) else '')
+            else:
+                new_row.append('')
+        self.csv_data['rows'].append(new_row)
+        self.update_table()
+        self.status_bar.showMessage(f'Added item: {new_row[0]} ({rarity.title()})')
+
+    def add_custom_item(self):
+        if not self.csv_data['header']:
+            QMessageBox.warning(self, 'Warning', 'No CSV loaded.')
+            return
+        name = self.custom_name_edit.text().strip()
+        typ = self.custom_type_edit.text().strip()
+        rarity = self.custom_rarity_combo.currentText().strip().lower()
+        text = self.custom_text_edit.text().strip()
+        value = self.custom_value_edit.text().strip()
+        if not name or not typ or not rarity:
+            QMessageBox.warning(self, 'Warning', 'Name, Type, and Rarity are required.')
+            return
+        row = []
+        for col in self.csv_data['header']:
+            if col.strip().lower() == 'name':
+                row.append(name)
+            elif col.strip().lower() == 'type':
+                row.append(typ)
+            elif col.strip().lower() == 'rarity':
+                row.append(rarity)
+            elif col.strip().lower() == 'text':
+                row.append(text)
+            elif col.strip().lower() == 'value':
+                row.append(value)
+            else:
+                row.append('')
+        self.csv_data['rows'].append(row)
+        self.update_table()
+        self.status_bar.showMessage(f'Added custom item: {name} ({rarity.title()})')
+
+    def keyPressEvent(self, event):
+        # Keyboard shortcuts: Ctrl+S (save), Delete (delete), Ctrl+F (focus filter)
+        if event.matches(QKeySequence.Save):
+            self.save_csv()
+            event.accept()
+        elif event.key() == Qt.Key_Delete:
+            self.delete_selected()
+            event.accept()
+        elif event.matches(QKeySequence.Find):
+            self.filter_edit.setFocus()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def toggle_dark_mode(self, enabled):
+        if enabled:
+            dark_stylesheet = """
+                QWidget { background: #232629; color: #e0e0e0; }
+                QTableWidget { background: #2b2b2b; color: #e0e0e0; alternate-background-color: #232629; }
+                QHeaderView::section { background: #232629; color: #e0e0e0; }
+                QLineEdit, QTextEdit { background: #232629; color: #e0e0e0; border: 1px solid #444; }
+                QPushButton { background: #353535; color: #e0e0e0; border: 1px solid #444; padding: 6px; }
+                QPushButton:checked { background: #444; }
+                QComboBox, QSpinBox { background: #232629; color: #e0e0e0; border: 1px solid #444; }
+                QStatusBar { background: #232629; color: #e0e0e0; }
+            """
+            self.setStyleSheet(dark_stylesheet)
+        else:
+            self.setStyleSheet("")
+
+    def init_character_creator_tab(self):
+        char_tab = QWidget()
+        char_layout = QVBoxLayout()
+        char_tab.setLayout(char_layout)
+
+        # --- Race Dropdown ---
+        race_bar = QHBoxLayout()
+        race_label = QLabel('Race:')
+        self.race_combo = QComboBox()
+        # Load races from races.csv and store full data for info display
+        self.race_data = []
+        races = []
+        try:
+            with open('races.csv', 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    name = row['name'].strip()
+                    if name:
+                        races.append(name)
+                        self.race_data.append(row)
+        except Exception:
+            pass
+        unique_races = sorted(set(races))
+        self.race_combo.addItems(unique_races)
+        race_bar.addWidget(race_label)
+        race_bar.addWidget(self.race_combo)
+        race_bar.addStretch()
+        char_layout.addLayout(race_bar)
+
+        # --- Race Info Display ---
+        self.race_info_label = QLabel()
+        self.race_info_label.setWordWrap(True)
+        self.race_info_label.setStyleSheet('font-size: 11pt; background: #f8f8f8; padding: 8px; border: 1px solid #ccc;')
+        char_layout.addWidget(self.race_info_label)
+
+        self.race_combo.currentTextChanged.connect(self.update_race_info)
+        self.update_race_info(self.race_combo.currentText())
+
+        # --- Background Dropdown ---
+        bg_bar = QHBoxLayout()
+        bg_label = QLabel('Background:')
+        self.bg_combo = QComboBox()
+        self.background_data = []
+        backgrounds = []
+        try:
+            with open('backgrounds.csv', 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    name = row['name'].strip()
+                    if name:
+                        backgrounds.append(name)
+                        self.background_data.append(row)
+        except Exception:
+            pass
+        unique_bgs = sorted(set(backgrounds))
+        self.bg_combo.addItems(unique_bgs)
+        bg_bar.addWidget(bg_label)
+        bg_bar.addWidget(self.bg_combo)
+        bg_bar.addStretch()
+        char_layout.addLayout(bg_bar)
+
+        # --- Background Info Display ---
+        self.bg_info_label = QLabel()
+        self.bg_info_label.setWordWrap(True)
+        self.bg_info_label.setStyleSheet('font-size: 11pt; background: #f8f8f8; padding: 8px; border: 1px solid #ccc;')
+        char_layout.addWidget(self.bg_info_label)
+
+        self.bg_combo.currentTextChanged.connect(self.update_bg_info)
+        self.update_bg_info(self.bg_combo.currentText())
+
+        # Placeholder for future character creation UI
+        self.tabs.addTab(char_tab, 'Character Creator')
+
+    def update_race_info(self, race_name):
+        # Find the first matching race row
+        for row in self.race_data:
+            if row['name'].strip() == race_name:
+                info = []
+                for key, val in row.items():
+                    if key is not None and val and key != 'name':
+                        if key.strip().lower() == 'features':
+                            # Handle literal \n and real newlines
+                            features = str(val).replace('\\n', '\n')  # Convert literal \n to real newline
+                            features = features.replace('\r\n', '\n').replace('\r', '\n')
+                            features = features.strip()
+                            # Split on real newlines
+                            feature_lines = [f for f in features.split('\n') if f.strip()]
+                            features_html = '<br>'.join(f"• {f.strip()}" for f in feature_lines)
+                            info.append(f"<b>{str(key).title().replace('_', ' ')}:</b><br>{features_html}")
+                        else:
+                            info.append(f"<b>{str(key).title().replace('_', ' ')}:</b> {val}")
+                self.race_info_label.setText('<br>'.join(info))
+                return
+        self.race_info_label.setText('')
+
+    def update_bg_info(self, bg_name):
+        # Find the first matching background row
+        for row in self.background_data:
+            if row['name'].strip() == bg_name:
+                info = []
+                for key, val in row.items():
+                    if key is not None and val and key != 'name':
+                        info.append(f"<b>{str(key).title().replace('_', ' ')}:</b> {val}")
+                self.bg_info_label.setText('<br>'.join(info))
+                return
+        self.bg_info_label.setText('')
+
+def gui_main():
+    app = QApplication(sys.argv)
+    window = MagicItemGenerator()
+    window.show()
+    sys.exit(app.exec())
+
+if __name__ == '__main__':
+    gui_main()
