@@ -2,7 +2,7 @@ import sys
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QLineEdit, QComboBox, QTableWidget, QTableWidgetItem, QTextEdit,
-    QFileDialog, QMessageBox, QSpinBox, QStatusBar, QAbstractItemView, QHeaderView
+    QFileDialog, QMessageBox, QSpinBox, QDoubleSpinBox, QStatusBar, QAbstractItemView, QHeaderView
 )
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QKeySequence
@@ -844,11 +844,53 @@ class MagicItemGenerator(QMainWindow):
             self.stat_combos.append(combo)
             stat_gen_bar.addWidget(spin)
             stat_gen_bar.addWidget(combo)
+
+        # --- Stat Generation Parameters ---
+        param_bar = QHBoxLayout()
+        self.lowest_stat_min_spin = QSpinBox()
+        self.lowest_stat_min_spin.setRange(1, 20)
+        self.lowest_stat_min_spin.setValue(7)
+        param_bar.addWidget(QLabel('Lowest Stat Min:'))
+        param_bar.addWidget(self.lowest_stat_min_spin)
+        self.lowest_stat_max_spin = QSpinBox()
+        self.lowest_stat_max_spin.setRange(1, 20)
+        self.lowest_stat_max_spin.setValue(9)
+        param_bar.addWidget(QLabel('Lowest Stat Max:'))
+        param_bar.addWidget(self.lowest_stat_max_spin)
+        self.highest_stat_min_spin = QSpinBox()
+        self.highest_stat_min_spin.setRange(1, 20)
+        self.highest_stat_min_spin.setValue(15)
+        param_bar.addWidget(QLabel('Highest Stat Min:'))
+        param_bar.addWidget(self.highest_stat_min_spin)
+        self.highest_stat_max_spin = QSpinBox()
+        self.highest_stat_max_spin.setRange(1, 20)
+        self.highest_stat_max_spin.setValue(17)
+        param_bar.addWidget(QLabel('Highest Stat Max:'))
+        param_bar.addWidget(self.highest_stat_max_spin)
+        self.average_min_spin = QDoubleSpinBox()
+        self.average_min_spin.setRange(1, 20)
+        self.average_min_spin.setDecimals(2)
+        self.average_min_spin.setValue(12)
+        param_bar.addWidget(QLabel('Average Min:'))
+        param_bar.addWidget(self.average_min_spin)
+        self.average_max_spin = QDoubleSpinBox()
+        self.average_max_spin.setRange(1, 20)
+        self.average_max_spin.setDecimals(2)
+        self.average_max_spin.setValue(13.50)
+        param_bar.addWidget(QLabel('Average Max:'))
+        param_bar.addWidget(self.average_max_spin)
+        param_bar.addStretch()
+
+        # --- Generate Button ---
+        gen_btn = QPushButton('Generate Stats')
+        gen_btn.clicked.connect(self.generate_stats)
+        stat_gen_bar.addWidget(gen_btn)
         stat_gen_bar.addStretch()
+
         # Add to the right of backgrounds (use a horizontal layout for backgrounds and stat gen)
-        bg_stat_row = QHBoxLayout()
+        bg_stat_row = QVBoxLayout()
         bg_stat_row.addLayout(bg_bar)
-        bg_stat_row.addSpacing(30)
+        bg_stat_row.addLayout(param_bar)
         bg_stat_row.addLayout(stat_gen_bar)
         char_layout.addLayout(bg_stat_row)
 
@@ -859,6 +901,45 @@ class MagicItemGenerator(QMainWindow):
         # ...existing code...
 
         self.tabs.addTab(char_tab, 'Character Creator')
+
+    def generate_stats(self):
+        import random
+        lowest_stat_min = self.lowest_stat_min_spin.value()
+        lowest_stat_max = self.lowest_stat_max_spin.value()
+        highest_stat_min = self.highest_stat_min_spin.value()
+        highest_stat_max = self.highest_stat_max_spin.value()
+        average_min = self.average_min_spin.value()
+        average_max = self.average_max_spin.value()
+        x = 4
+        y = 6
+        numbers = []
+        tries = 0
+        while True:
+            numbers.clear()
+            for j in range(y):
+                total = 10
+                for i in range(x):
+                    randomNumber = random.randint(1, 6)
+                    if randomNumber % 2 == 0:
+                        total += randomNumber
+                    else:
+                        total -= randomNumber
+                if total < 1:
+                    total = 1
+                if total > 20:
+                    total = 20
+                numbers.append(total)
+            mean = sum(numbers) / len(numbers)
+            if (mean < average_min or mean > average_max or
+                min(numbers) < lowest_stat_min or max(numbers) < lowest_stat_min or
+                min(numbers) > lowest_stat_max or max(numbers) > highest_stat_max):
+                tries += 1
+                if tries > 1000:
+                    break
+                continue
+            break
+        for i, val in enumerate(numbers):
+            self.stat_spinboxes[i].setValue(val)
 
     def handle_stat_swap(self, changed_idx, *args):
         changed_combo = self.stat_combos[changed_idx]
