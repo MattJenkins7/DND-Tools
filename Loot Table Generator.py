@@ -2,7 +2,8 @@ import sys
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QLineEdit, QComboBox, QTableWidget, QTableWidgetItem, QTextEdit,
-    QFileDialog, QMessageBox, QSpinBox, QDoubleSpinBox, QStatusBar, QAbstractItemView, QHeaderView
+    QFileDialog, QMessageBox, QSpinBox, QDoubleSpinBox, QStatusBar, QAbstractItemView, QHeaderView,
+    QScrollArea, QToolButton, QSizePolicy, QFrame
 )
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QKeySequence
@@ -11,6 +12,7 @@ import csv
 import random
 import difflib
 import functools
+import json
 
 RARITY_VALUES = {
     'common': 50,
@@ -755,6 +757,30 @@ class MagicItemGenerator(QMainWindow):
         else:
             self.setStyleSheet("")
 
+    def make_collapsible_section(self, title, content_widget):
+        # Returns a QWidget with a toggle button and collapsible content
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        toggle = QToolButton()
+        toggle.setText(title)
+        toggle.setCheckable(True)
+        toggle.setChecked(False)
+        toggle.setStyleSheet('QToolButton { font-weight: bold; font-size: 12pt; text-align: left; }')
+        toggle.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        toggle.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        frame = QFrame()
+        frame.setFrameShape(QFrame.NoFrame)
+        frame.setLayout(QVBoxLayout())
+        frame.layout().addWidget(content_widget)
+        frame.setVisible(False)
+        def on_toggle(checked):
+            frame.setVisible(checked)
+        toggle.toggled.connect(on_toggle)
+        layout.addWidget(toggle)
+        layout.addWidget(frame)
+        return container
+
     def init_character_creator_tab(self):
         char_tab = QWidget()
         char_layout = QVBoxLayout()
@@ -788,7 +814,13 @@ class MagicItemGenerator(QMainWindow):
         self.race_info_label = QLabel()
         self.race_info_label.setWordWrap(True)
         self.race_info_label.setStyleSheet('font-size: 11pt; background: #f8f8f8; padding: 8px; border: 1px solid #ccc;')
-        char_layout.addWidget(self.race_info_label)
+        race_scroll = QScrollArea()
+        race_scroll.setWidgetResizable(True)
+        race_scroll.setMinimumHeight(60)
+        race_scroll.setMaximumHeight(200)
+        race_scroll.setWidget(self.race_info_label)
+        race_info_section = self.make_collapsible_section('Show Race Details', race_scroll)
+        char_layout.addWidget(race_info_section)
 
         self.race_combo.currentTextChanged.connect(self.update_race_info)
         self.update_race_info(self.race_combo.currentText())
@@ -820,10 +852,57 @@ class MagicItemGenerator(QMainWindow):
         self.bg_info_label = QLabel()
         self.bg_info_label.setWordWrap(True)
         self.bg_info_label.setStyleSheet('font-size: 11pt; background: #f8f8f8; padding: 8px; border: 1px solid #ccc;')
-        char_layout.addWidget(self.bg_info_label)
+        bg_scroll = QScrollArea()
+        bg_scroll.setWidgetResizable(True)
+        bg_scroll.setMinimumHeight(60)
+        bg_scroll.setMaximumHeight(200)
+        bg_scroll.setWidget(self.bg_info_label)
+        bg_info_section = self.make_collapsible_section('Show Background Details', bg_scroll)
+        char_layout.addWidget(bg_info_section)
 
         self.bg_combo.currentTextChanged.connect(self.update_bg_info)
         self.update_bg_info(self.bg_combo.currentText())
+
+        # --- Class Dropdown ---
+        class_bar = QHBoxLayout()
+        class_label = QLabel('Class:')
+        self.class_combo = QComboBox()
+        import json
+        self.class_data = []
+        classes = []
+        try:
+            with open('classes.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                for entry in data.get('classes', []):
+                    name = entry.get('name', '').strip()
+                    if name:
+                        classes.append(name)
+                        self.class_data.append(entry)
+        except Exception:
+            pass
+        unique_classes = sorted(set(classes))
+        self.class_combo.addItems(unique_classes)
+        class_bar.addWidget(class_label)
+        class_bar.addWidget(self.class_combo)
+        class_bar.addStretch()
+        char_layout.addLayout(class_bar)
+
+        # --- Class Info Display ---
+        self.class_info_label = QLabel()
+        self.class_info_label.setWordWrap(True)
+        self.class_info_label.setStyleSheet('font-size: 12pt; background: #f8f8f8; padding: 10px; border: 2px solid #888;')
+        # Put class info label in a scroll area
+        class_scroll = QScrollArea()
+        class_scroll.setWidgetResizable(True)
+        class_scroll.setMinimumHeight(200)
+        class_scroll.setMaximumHeight(500)
+        class_scroll.setWidget(self.class_info_label)
+        class_info_section = self.make_collapsible_section('Show Class Details', class_scroll)
+        # Add class section with stretch to make it dominant
+        char_layout.addWidget(class_info_section, stretch=2)
+
+        self.class_combo.currentTextChanged.connect(self.update_class_info)
+        self.update_class_info(self.class_combo.currentText())
 
         # --- Stat Generation Section ---
         stat_gen_bar = QHBoxLayout()
@@ -850,11 +929,11 @@ class MagicItemGenerator(QMainWindow):
             stat_grid.addWidget(spin, i+1, 1)
             inc_label = QLabel('0')
             inc_label.setMinimumWidth(24)
-            inc_label.setAlignment(Qt.AlignCenter)
+            inc_label.setAlignment(Qt.AlignLeft)
             stat_grid.addWidget(inc_label, i+1, 2)
             total_label = QLabel('10')
             total_label.setMinimumWidth(24)
-            total_label.setAlignment(Qt.AlignCenter)
+            total_label.setAlignment(Qt.AlignLeft)
             stat_grid.addWidget(total_label, i+1, 3)
             self.stat_spinboxes.append(spin)
             self.stat_increase_labels.append(inc_label)
@@ -929,13 +1008,34 @@ class MagicItemGenerator(QMainWindow):
 
         # Add to layout
         char_layout.addLayout(race_bar)
-        char_layout.addWidget(self.race_info_label)
+        char_layout.addWidget(race_info_section)
         char_layout.addLayout(bg_bar)
-        char_layout.addWidget(self.bg_info_label)
+        char_layout.addWidget(bg_info_section)
+        char_layout.addLayout(class_bar)
+        char_layout.addWidget(class_info_section)
         char_layout.addLayout(asi_radio_bar)
         char_layout.addLayout(stat_grid)
         char_layout.addLayout(stat_controls_bar)
         char_layout.addLayout(param_bar)
+
+        # --- Character Info Inputs (Name, Alignment, Player Name) ---
+        info_bar = QHBoxLayout()
+        info_bar.addWidget(QLabel('Character Name:'))
+        self.char_name_edit = QLineEdit()
+        info_bar.addWidget(self.char_name_edit)
+        info_bar.addWidget(QLabel('Alignment:'))
+        self.alignment_edit = QLineEdit()
+        info_bar.addWidget(self.alignment_edit)
+        info_bar.addWidget(QLabel('Player Name:'))
+        self.player_name_edit = QLineEdit()
+        info_bar.addWidget(self.player_name_edit)
+        info_bar.addStretch()
+        char_layout.insertLayout(0, info_bar)
+
+        # --- Export to PDF Button ---
+        export_pdf_btn = QPushButton('Export to PDF')
+        export_pdf_btn.clicked.connect(self.export_character_to_pdf)
+        char_layout.addWidget(export_pdf_btn)
 
         # Connect stat spinboxes to update totals (no prompt)
         for spin in self.stat_spinboxes:
@@ -944,8 +1044,13 @@ class MagicItemGenerator(QMainWindow):
         self.asi_group.buttonClicked.disconnect()
         self.asi_group.buttonClicked.connect(self.on_asi_source_changed)
 
-        # Add the Character Creator tab to the tab widget
-        self.tabs.addTab(char_tab, 'Character Creator')
+        # --- Wrap the whole tab in a scroll area ---
+        outer_scroll = QScrollArea()
+        outer_scroll.setWidgetResizable(True)
+        container = QWidget()
+        container.setLayout(char_layout)
+        outer_scroll.setWidget(container)
+        self.tabs.addTab(outer_scroll, 'Character Creator')
 
     def update_stat_totals(self):
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
@@ -1105,6 +1210,40 @@ class MagicItemGenerator(QMainWindow):
                 self.bg_info_label.setText('<br>'.join(info))
                 return
         self.bg_info_label.setText('')
+
+    def update_class_info(self, class_name):
+        # Find the first matching class row
+        for row in self.class_data:
+            if row['name'].strip() == class_name:
+                info = []
+                # Basic info
+                if 'hit_die' in row:
+                    info.append(f"<b>Hit Die:</b> {row['hit_die']}")
+                if 'primary_abilities' in row:
+                    abilities = ', '.join(row['primary_abilities'])
+                    info.append(f"<b>Primary Abilities:</b> {abilities}")
+                if 'subclass_pick_level' in row:
+                    info.append(f"<b>Subclass Pick Level:</b> {row['subclass_pick_level']}")
+                if 'caster_type' in row and row['caster_type'] != 'none':
+                    info.append(f"<b>Caster Type:</b> {row['caster_type'].capitalize()}")
+                # Features by level (names only)
+                features = row.get('features', {})
+                if features:
+                    feature_lines = []
+                    for lvl in sorted(features, key=lambda x: int(x)):
+                        names = ', '.join(f["name"] for f in features[lvl] if "name" in f)
+                        if names:
+                            feature_lines.append(f"<b>Level {lvl}:</b> {names}")
+                    if feature_lines:
+                        info.append("<b>Features by Level:</b><br>" + '<br>'.join(feature_lines))
+                # Subclasses
+                subclasses = row.get('subclasses', [])
+                if subclasses:
+                    subclass_names = ', '.join(sc['name'] for sc in subclasses if 'name' in sc)
+                    info.append(f"<b>Subclasses:</b> {subclass_names}")
+                self.class_info_label.setText('<br>'.join(info))
+                return
+        self.class_info_label.setText('')
 
     def prompt_and_apply_asi(self):
         # Prompt user for source of ability score increases
@@ -1327,6 +1466,67 @@ class MagicItemGenerator(QMainWindow):
                 # fallback: do nothing
                 pass
         return asi_result
+
+    def export_character_to_pdf(self):
+        try:
+            from pdfrw import PdfReader, PdfWriter
+        except ImportError:
+            QMessageBox.critical(self, 'Error', 'pdfrw is not installed. Please run: pip install pdfrw')
+            return
+        # Gather data from UI
+        char_name = self.char_name_edit.text().strip() or 'Unnamed'
+        alignment = self.alignment_edit.text().strip()
+        player_name = self.player_name_edit.text().strip()
+        class_name = self.class_combo.currentText()
+        level = self.level_spin.value()
+        background = self.bg_combo.currentText()
+        race = self.race_combo.currentText()
+        # Example stat extraction
+        stats = {stat: self.stat_spinboxes[i].value() for i, stat in enumerate(['STR','DEX','CON','WIS','INT','CHA'])}
+        # Calculate modifiers
+        def ability_mod(score):
+            # D&D 5e: (score - 10) // 2
+            return (score - 10) // 2
+        mods = {stat: ability_mod(val) for stat, val in stats.items()}
+        # Map to PDF field names (adjust as needed for your template)
+        pdf_data = {
+            'CharacterName': char_name,
+            'ClassLevel': f'{class_name} {level}',
+            'Background': background,
+            'PlayerName': player_name,
+            'Race': race,
+            'Alignment': alignment,
+            'STRmod': str(stats['STR']),
+            'DEXmod ': str(stats['DEX']),
+            'CONmod': str(stats['CON']),
+            'INTmod': str(stats['INT']),
+            'WISmod': str(stats['WIS']),
+            'CHamod': str(stats['CHA']),
+            'STR': f"{mods['STR']:+d}",
+            'DEX': f"{mods['DEX']:+d}",  # Ensure this is the modifier, not the stat
+            'CON': f"{mods['CON']:+d}",
+            'INT': f"{mods['INT']:+d}",
+            'WIS': f"{mods['WIS']:+d}",
+            'CHA': f"{mods['CHA']:+d}",
+            # Add more mappings as needed
+        }
+        template_path = 'character_sheet_template.pdf'
+        output_path = f"{char_name.replace(' ', '_')}.pdf"
+        try:
+            pdf = PdfReader(template_path)
+            for page in pdf.pages:
+                annotations = page.Annots
+                if annotations:
+                    for annotation in annotations:
+                        if annotation.Subtype == '/Widget' and annotation.T:
+                            key = annotation.T[1:-1]  # Remove parentheses
+                            if key in pdf_data:
+                                annotation.V = str(pdf_data[key])
+                                annotation.AP = ''
+            PdfWriter().write(output_path, pdf)
+            QMessageBox.information(self, 'PDF Exported', f'Character sheet saved as {output_path}')
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Failed to export PDF: {e}')
 def gui_main():
     app = QApplication(sys.argv)
     window = MagicItemGenerator()
