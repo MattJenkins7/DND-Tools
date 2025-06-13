@@ -1,0 +1,929 @@
+{
+	"fileType": "races-sublist",
+	"siteVersion": "2.9.0",
+	"name": "species",
+	"saveId": "4d0fd78a-dfdd-417c-918a-91302e60aac5",
+	"items": [
+		{
+			"h": "aarakocra_dmg"
+		},
+		{
+			"h": "aarakocra_eepc"
+		},
+		{
+			"h": "aarakocra_mpmm"
+		},
+		{
+			"h": "aasimar_dmg"
+		},
+		{
+			"h": "aasimar_mpmm"
+		},
+		{
+			"h": "aasimar_vgm"
+		},
+		{
+			"h": "aasimar_xphb"
+		},
+		{
+			"h": "aasimar%20(fallen)_vgm"
+		},
+		{
+			"h": "aasimar%20(protector)_vgm"
+		},
+		{
+			"h": "aasimar%20(scourge)_vgm"
+		},
+		{
+			"h": "aetherborn_psk"
+		},
+		{
+			"h": "astral%20elf_aag"
+		},
+		{
+			"h": "autognome_aag"
+		},
+		{
+			"h": "aven_psa"
+		},
+		{
+			"h": "aven_psd"
+		},
+		{
+			"h": "aven%20(hawk-headed)_psa"
+		},
+		{
+			"h": "aven%20(ibis-headed)_psa"
+		},
+		{
+			"h": "barding_tlotrr"
+		},
+		{
+			"h": "bree-hobbit_tlotrr"
+		},
+		{
+			"h": "bree-hobbit%20(fallohide)_tlotrr"
+		},
+		{
+			"h": "bree-hobbit%20(harfoot)_tlotrr"
+		},
+		{
+			"h": "bree-hobbit%20(stoor)_tlotrr"
+		},
+		{
+			"h": "bugbear_erlw"
+		},
+		{
+			"h": "bugbear_mpmm"
+		},
+		{
+			"h": "bugbear_vgm"
+		},
+		{
+			"h": "bullywug_dmg"
+		},
+		{
+			"h": "centaur_ggr"
+		},
+		{
+			"h": "centaur_mot"
+		},
+		{
+			"h": "centaur_mpmm"
+		},
+		{
+			"h": "cervan_humblewoodcampaignsetting"
+		},
+		{
+			"h": "cervan%20(grove)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "cervan%20(pronghorn)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "changeling_erlw"
+		},
+		{
+			"h": "changeling_mpmm"
+		},
+		{
+			"h": "corvum_humblewoodcampaignsetting"
+		},
+		{
+			"h": "corvum%20(dusk)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "corvum%20(kindled)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "custom%20lineage_tce"
+		},
+		{
+			"h": "dara_obojimatallgrass"
+		},
+		{
+			"h": "dara%20(blue)_obojimatallgrass"
+		},
+		{
+			"h": "dara%20(red)_obojimatallgrass"
+		},
+		{
+			"h": "deep%20gnome_mpmm"
+		},
+		{
+			"h": "dhampir_vrgr"
+		},
+		{
+			"h": "dragonborn_phb"
+		},
+		{
+			"h": "dragonborn_xphb"
+		},
+		{
+			"h": "dragonborn%20(base)_phb"
+		},
+		{
+			"h": "dragonborn%20(chromatic)_ftd"
+		},
+		{
+			"h": "dragonborn%20(draconblood)_egw"
+		},
+		{
+			"h": "dragonborn%20(gem)_ftd"
+		},
+		{
+			"h": "dragonborn%20(metallic)_ftd"
+		},
+		{
+			"h": "dragonborn%20(ravenite)_egw"
+		},
+		{
+			"h": "duergar_mpmm"
+		},
+		{
+			"h": "dwarf_phb"
+		},
+		{
+			"h": "dwarf_xphb"
+		},
+		{
+			"h": "dwarf_tlotrr"
+		},
+		{
+			"h": "dwarf%20(blue%20mountain)_tlotrr"
+		},
+		{
+			"h": "dwarf%20(duergar)_mtf"
+		},
+		{
+			"h": "dwarf%20(erebor)_tlotrr"
+		},
+		{
+			"h": "dwarf%20(hill)_phb"
+		},
+		{
+			"h": "dwarf%20(iron%20hill)_tlotrr"
+		},
+		{
+			"h": "dwarf%20(kaladesh)_psk"
+		},
+		{
+			"h": "dwarf%20(mark%20of%20warding)_erlw"
+		},
+		{
+			"h": "dwarf%20(mountain)_phb"
+		},
+		{
+			"h": "dwarf%20(wandering)_tlotrr"
+		},
+		{
+			"h": "eladrin_mpmm"
+		},
+		{
+			"h": "elf_phb"
+		},
+		{
+			"h": "elf_xphb"
+		},
+		{
+			"h": "elf_obojimatallgrass"
+		},
+		{
+			"h": "elf_tlotrr"
+		},
+		{
+			"h": "elf%20(courage)_obojimatallgrass"
+		},
+		{
+			"h": "elf%20(drow)_phb"
+		},
+		{
+			"h": "elf%20(eladrin)_dmg"
+		},
+		{
+			"h": "elf%20(eladrin)_mtf"
+		},
+		{
+			"h": "elf%20(fury)_obojimatallgrass"
+		},
+		{
+			"h": "elf%20(harmony)_obojimatallgrass"
+		},
+		{
+			"h": "elf%20(high)_phb"
+		},
+		{
+			"h": "elf%20(kaladesh)_psk"
+		},
+		{
+			"h": "elf%20(kaladesh%3b%20bishatar%20and%20tirahar)_psk"
+		},
+		{
+			"h": "elf%20(kaladesh%3b%20vahadar)_psk"
+		},
+		{
+			"h": "elf%20(lindon)_tlotrr"
+		},
+		{
+			"h": "elf%20(mark%20of%20shadow)_erlw"
+		},
+		{
+			"h": "elf%20(nature)_obojimatallgrass"
+		},
+		{
+			"h": "elf%20(pallid)_egw"
+		},
+		{
+			"h": "elf%20(purity)_obojimatallgrass"
+		},
+		{
+			"h": "elf%20(sea)_mtf"
+		},
+		{
+			"h": "elf%20(selflessness)_obojimatallgrass"
+		},
+		{
+			"h": "elf%20(shadar-kai)_mtf"
+		},
+		{
+			"h": "elf%20(wood)_phb"
+		},
+		{
+			"h": "elf%20(zendikar)_psz"
+		},
+		{
+			"h": "elf%20(zendikar%3b%20joraga%20nation)_psz"
+		},
+		{
+			"h": "elf%20(zendikar%3b%20mul%20daya%20nation)_psz"
+		},
+		{
+			"h": "elf%20(zendikar%3b%20tajuru%20nation)_psz"
+		},
+		{
+			"h": "etherean_griffonssaddlebag2"
+		},
+		{
+			"h": "fairy_mpmm"
+		},
+		{
+			"h": "fairy_wbtw"
+		},
+		{
+			"h": "firbolg_mpmm"
+		},
+		{
+			"h": "firbolg_vgm"
+		},
+		{
+			"h": "gallus_humblewoodcampaignsetting"
+		},
+		{
+			"h": "gallus%20(bright)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "gallus%20(huden)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "geleton_griffonssaddlebag2"
+		},
+		{
+			"h": "genasi_eepc"
+		},
+		{
+			"h": "genasi_mpmm"
+		},
+		{
+			"h": "genasi%20(air)_eepc"
+		},
+		{
+			"h": "genasi%20(air)_mpmm"
+		},
+		{
+			"h": "genasi%20(earth)_eepc"
+		},
+		{
+			"h": "genasi%20(earth)_mpmm"
+		},
+		{
+			"h": "genasi%20(fire)_eepc"
+		},
+		{
+			"h": "genasi%20(fire)_mpmm"
+		},
+		{
+			"h": "genasi%20(water)_eepc"
+		},
+		{
+			"h": "genasi%20(water)_mpmm"
+		},
+		{
+			"h": "giff_aag"
+		},
+		{
+			"h": "gith_mtf"
+		},
+		{
+			"h": "gith%20(githyanki)_mtf"
+		},
+		{
+			"h": "gith%20(githzerai)_mtf"
+		},
+		{
+			"h": "githyanki_mpmm"
+		},
+		{
+			"h": "githzerai_mpmm"
+		},
+		{
+			"h": "gnoll_dmg"
+		},
+		{
+			"h": "gnome_phb"
+		},
+		{
+			"h": "gnome_xphb"
+		},
+		{
+			"h": "gnome%20(deep)_mtf"
+		},
+		{
+			"h": "gnome%20(deep)_dmg"
+		},
+		{
+			"h": "gnome%20(deep%2fsvirfneblin)_scag"
+		},
+		{
+			"h": "gnome%20(mark%20of%20scribing)_erlw"
+		},
+		{
+			"h": "gnome%20(forest)_phb"
+		},
+		{
+			"h": "gnome%20(rock)_phb"
+		},
+		{
+			"h": "goblin_dmg"
+		},
+		{
+			"h": "goblin_erlw"
+		},
+		{
+			"h": "goblin_ggr"
+		},
+		{
+			"h": "goblin_mpmm"
+		},
+		{
+			"h": "goblin_psz"
+		},
+		{
+			"h": "goblin_vgm"
+		},
+		{
+			"h": "goblin%20(dankwood)_awm"
+		},
+		{
+			"h": "goblin%20(ixalan)_psx"
+		},
+		{
+			"h": "goblin%20(zendikar%3b%20grotag%20tribe)_psz"
+		},
+		{
+			"h": "goblin%20(zendikar%3b%20lavastep%20tribe)_psz"
+		},
+		{
+			"h": "goliath_mpmm"
+		},
+		{
+			"h": "goblin%20(zendikar%3b%20tuktuk%20tribe)_psz"
+		},
+		{
+			"h": "goliath_vgm"
+		},
+		{
+			"h": "goliath_xphb"
+		},
+		{
+			"h": "grimlock_dmg"
+		},
+		{
+			"h": "grung_oga"
+		},
+		{
+			"h": "hadozee_aag"
+		},
+		{
+			"h": "half-elf_phb"
+		},
+		{
+			"h": "half-elf%20(base)_phb"
+		},
+		{
+			"h": "half-elf%20(variant%3b%20aquatic%20elf%20descent)_scag"
+		},
+		{
+			"h": "half-elf%20(variant%3b%20drow%20descent)_scag"
+		},
+		{
+			"h": "half-elf%20(variant%3b%20mark%20of%20detection)_erlw"
+		},
+		{
+			"h": "half-elf%20(variant%3b%20mark%20of%20storm)_erlw"
+		},
+		{
+			"h": "half-elf%20(variant%3b%20moon%20elf%20or%20sun%20elf%20descent)_scag"
+		},
+		{
+			"h": "half-elf%20(variant%3b%20wood%20elf%20descent)_scag"
+		},
+		{
+			"h": "half-orc_phb"
+		},
+		{
+			"h": "half-orc%20(base)_phb"
+		},
+		{
+			"h": "half-orc%20(variant%3b%20mark%20of%20finding)_erlw"
+		},
+		{
+			"h": "halfling_phb"
+		},
+		{
+			"h": "halfling_xphb"
+		},
+		{
+			"h": "halfling%20(ghostwise)_scag"
+		},
+		{
+			"h": "halfling%20(lightfoot)_phb"
+		},
+		{
+			"h": "halfling%20(lotusden)_egw"
+		},
+		{
+			"h": "halfling%20(mark%20of%20healing)_erlw"
+		},
+		{
+			"h": "halfling%20(mark%20of%20hospitality)_erlw"
+		},
+		{
+			"h": "halfling%20(stout)_phb"
+		},
+		{
+			"h": "harengon_mpmm"
+		},
+		{
+			"h": "harengon_wbtw"
+		},
+		{
+			"h": "hedge_humblewoodcampaignsetting"
+		},
+		{
+			"h": "hexblood_vrgr"
+		},
+		{
+			"h": "hobbit_tlotrr"
+		},
+		{
+			"h": "hobbit%20(fallohide)_tlotrr"
+		},
+		{
+			"h": "hobbit%20(harfoot)_tlotrr"
+		},
+		{
+			"h": "hobbit%20(stoor)_tlotrr"
+		},
+		{
+			"h": "hobgoblin_dmg"
+		},
+		{
+			"h": "hobgoblin_erlw"
+		},
+		{
+			"h": "hobgoblin_mpmm"
+		},
+		{
+			"h": "hobgoblin_vgm"
+		},
+		{
+			"h": "human_phb"
+		},
+		{
+			"h": "human_xphb"
+		},
+		{
+			"h": "human%20(amonkhet)_psa"
+		},
+		{
+			"h": "human%20(base)_phb"
+		},
+		{
+			"h": "human%20(innistrad)_psi"
+		},
+		{
+			"h": "human%20(innistrad%3b%20gavony)_psi"
+		},
+		{
+			"h": "human%20(innistrad%3b%20kessig)_psi"
+		},
+		{
+			"h": "human%20(innistrad%3b%20stensia)_psi"
+		},
+		{
+			"h": "human%20(innistrad%3b%20nephalia)_psi"
+		},
+		{
+			"h": "human%20(ixalan)_psx"
+		},
+		{
+			"h": "human%20(kaladesh)_psk"
+		},
+		{
+			"h": "human%20(keldon)_psd"
+		},
+		{
+			"h": "human%20(mark%20of%20handling)_erlw"
+		},
+		{
+			"h": "human%20(mark%20of%20making)_erlw"
+		},
+		{
+			"h": "human%20(mark%20of%20passage)_erlw"
+		},
+		{
+			"h": "human%20(mark%20of%20sentinel)_erlw"
+		},
+		{
+			"h": "human%20(variant)_phb"
+		},
+		{
+			"h": "human%20(variant%3b%20mark%20of%20finding)_erlw"
+		},
+		{
+			"h": "human%20(zendikar)_psz"
+		},
+		{
+			"h": "jerbeen_humblewoodcampaignsetting"
+		},
+		{
+			"h": "kalashtar_erlw"
+		},
+		{
+			"h": "kender_dsotdq"
+		},
+		{
+			"h": "kenku_dmg"
+		},
+		{
+			"h": "kenku_mpmm"
+		},
+		{
+			"h": "kenku_vgm"
+		},
+		{
+			"h": "khenra_psa"
+		},
+		{
+			"h": "kobold_dmg"
+		},
+		{
+			"h": "kobold_mpmm"
+		},
+		{
+			"h": "kobold_vgm"
+		},
+		{
+			"h": "kor_psz"
+		},
+		{
+			"h": "kuo-toa_dmg"
+		},
+		{
+			"h": "leonin_mot"
+		},
+		{
+			"h": "lizardfolk_dmg"
+		},
+		{
+			"h": "lizardfolk_mpmm"
+		},
+		{
+			"h": "lizardfolk_vgm"
+		},
+		{
+			"h": "locathah_lr"
+		},
+		{
+			"h": "loxodon_ggr"
+		},
+		{
+			"h": "luma_humblewoodcampaignsetting"
+		},
+		{
+			"h": "luma%20(sable)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "luma%20(sera)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "man%20of%20bree_tlotrr"
+		},
+		{
+			"h": "mapach_humblewoodcampaignsetting"
+		},
+		{
+			"h": "merfolk_dmg"
+		},
+		{
+			"h": "merfolk_psz"
+		},
+		{
+			"h": "merfolk%20(ixalan%3b%20blue)_psx"
+		},
+		{
+			"h": "merfolk%20(ixalan%3b%20green)_psx"
+		},
+		{
+			"h": "merfolk%20(zendikar%3b%20cosi%20creed)_psz"
+		},
+		{
+			"h": "merfolk%20(zendikar%3b%20emeria%20creed)_psz"
+		},
+		{
+			"h": "merfolk%20(zendikar%3b%20ula%20creed)_psz"
+		},
+		{
+			"h": "minotaur_ggr"
+		},
+		{
+			"h": "minotaur_mot"
+		},
+		{
+			"h": "minotaur_mpmm"
+		},
+		{
+			"h": "minotaur%20(amonkhet)_psa"
+		},
+		{
+			"h": "naga_psa"
+		},
+		{
+			"h": "nakudama_obojimatallgrass"
+		},
+		{
+			"h": "orc_dmg"
+		},
+		{
+			"h": "orc_egw"
+		},
+		{
+			"h": "orc_erlw"
+		},
+		{
+			"h": "orc_mpmm"
+		},
+		{
+			"h": "orc_vgm"
+		},
+		{
+			"h": "orc_xphb"
+		},
+		{
+			"h": "orc%20(ixalan)_psx"
+		},
+		{
+			"h": "owlin_scc"
+		},
+		{
+			"h": "plasmoid_aag"
+		},
+		{
+			"h": "ranger%20of%20the%20north_tlotrr"
+		},
+		{
+			"h": "raptor_humblewoodcampaignsetting"
+		},
+		{
+			"h": "raptor%20(maran)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "raptor%20(mistral)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "reborn_vrgr"
+		},
+		{
+			"h": "satyr_mot"
+		},
+		{
+			"h": "satyr_mpmm"
+		},
+		{
+			"h": "sea%20elf_mpmm"
+		},
+		{
+			"h": "shadar-kai_mpmm"
+		},
+		{
+			"h": "shifter_erlw"
+		},
+		{
+			"h": "shifter_mpmm"
+		},
+		{
+			"h": "shifter%20(beasthide)_erlw"
+		},
+		{
+			"h": "shifter%20(longtooth)_erlw"
+		},
+		{
+			"h": "shifter%20(swiftstride)_erlw"
+		},
+		{
+			"h": "shifter%20(wildhunt)_erlw"
+		},
+		{
+			"h": "simic%20hybrid_ggr"
+		},
+		{
+			"h": "siren_psx"
+		},
+		{
+			"h": "skeleton_dmg"
+		},
+		{
+			"h": "strig_humblewoodcampaignsetting"
+		},
+		{
+			"h": "strig%20(stout)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "strig%20(swift)_humblewoodcampaignsetting"
+		},
+		{
+			"h": "tabaxi_mpmm"
+		},
+		{
+			"h": "tabaxi_vgm"
+		},
+		{
+			"h": "thri-kreen_aag"
+		},
+		{
+			"h": "tiefling_phb"
+		},
+		{
+			"h": "tiefling_xphb"
+		},
+		{
+			"h": "tiefling%20(asmodeus)_mtf"
+		},
+		{
+			"h": "tiefling%20(baalzebul)_mtf"
+		},
+		{
+			"h": "tiefling%20(base)_phb"
+		},
+		{
+			"h": "tiefling%20(dispater)_mtf"
+		},
+		{
+			"h": "tiefling%20(fierna)_mtf"
+		},
+		{
+			"h": "tiefling%20(glasya)_mtf"
+		},
+		{
+			"h": "tiefling%20(levistus)_mtf"
+		},
+		{
+			"h": "tiefling%20(mammon)_mtf"
+		},
+		{
+			"h": "tiefling%20(mephistopheles)_mtf"
+		},
+		{
+			"h": "tiefling%20(variant%3b%20devil's%20tongue)_scag"
+		},
+		{
+			"h": "tiefling%20(variant%3b%20hellfire)_scag"
+		},
+		{
+			"h": "tiefling%20(variant%3b%20infernal%20legacy)_scag"
+		},
+		{
+			"h": "tiefling%20(variant%3b%20winged)_scag"
+		},
+		{
+			"h": "tiefling%20(zariel)_mtf"
+		},
+		{
+			"h": "tortle_mpmm"
+		},
+		{
+			"h": "tortle_ttp"
+		},
+		{
+			"h": "triton_mot"
+		},
+		{
+			"h": "triton_mpmm"
+		},
+		{
+			"h": "triton_vgm"
+		},
+		{
+			"h": "troglodyte_dmg"
+		},
+		{
+			"h": "vampire_psz"
+		},
+		{
+			"h": "vampire%20(ixalan)_psx"
+		},
+		{
+			"h": "vampire%20(zendikar)_psz"
+		},
+		{
+			"h": "vedalken_ggr"
+		},
+		{
+			"h": "vedalken_psk"
+		},
+		{
+			"h": "verdan_ai"
+		},
+		{
+			"h": "vulpin_humblewoodcampaignsetting"
+		},
+		{
+			"h": "warforged_erlw"
+		},
+		{
+			"h": "yuan-ti_mpmm"
+		},
+		{
+			"h": "yuan-ti%20pureblood_vgm"
+		},
+		{
+			"h": "zombie_dmg"
+		}
+	],
+	"sources": [
+		"DMG",
+		"EEPC",
+		"MPMM",
+		"VGM",
+		"XPHB",
+		"PSK",
+		"AAG",
+		"PSA",
+		"PSD",
+		"TLotRR",
+		"ERLW",
+		"GGR",
+		"MOT",
+		"HumblewoodCampaignSetting",
+		"TCE",
+		"ObojimaTallGrass",
+		"VRGR",
+		"PHB",
+		"FTD",
+		"EGW",
+		"MTF",
+		"PSZ",
+		"GriffonsSaddlebag2",
+		"WBtW",
+		"SCAG",
+		"AWM",
+		"PSX",
+		"OGA",
+		"PSI",
+		"DSotDQ",
+		"LR",
+		"SCC",
+		"TTP",
+		"AI"
+	]
+}

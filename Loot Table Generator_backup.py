@@ -1024,13 +1024,8 @@ class MagicItemGenerator(QMainWindow):
         self.char_name_edit = QLineEdit()
         info_bar.addWidget(self.char_name_edit)
         info_bar.addWidget(QLabel('Alignment:'))
-        self.alignment_combo = QComboBox()
-        self.alignment_combo.addItems([
-            'Lawful Good', 'Neutral Good', 'Chaotic Good',
-            'Lawful Neutral', 'True Neutral', 'Chaotic Neutral',
-            'Lawful Evil', 'Neutral Evil', 'Chaotic Evil'
-        ])
-        info_bar.addWidget(self.alignment_combo)
+        self.alignment_edit = QLineEdit()
+        info_bar.addWidget(self.alignment_edit)        
         info_bar.addWidget(QLabel('Player Name:'))
         self.player_name_edit = QLineEdit()
         info_bar.addWidget(self.player_name_edit)
@@ -1566,7 +1561,7 @@ class MagicItemGenerator(QMainWindow):
             return
         # Gather data from UI
         char_name = self.char_name_edit.text().strip() or 'Unnamed'
-        alignment = self.alignment_combo.currentText()
+        alignment = self.alignment_edit.text().strip()
         player_name = self.player_name_edit.text().strip()
         class_name = self.class_combo.currentText()
         level = self.level_spin.value()
@@ -1634,24 +1629,10 @@ class MagicItemGenerator(QMainWindow):
                         race_languages = val
                         break        # Get selected race skill proficiencies
         selected_race_skills = self.get_selected_race_skills()
-
-        # Get background skill proficiencies
-        background_skills = []
-        for row in self.background_data:
-            if row['name'].strip() == background:
-                skills_field = row.get('Skills', '')
-                if skills_field:
-                    # Split on semicolon or comma, strip whitespace, ignore empty
-                    import re
-                    background_skills = [s.strip() for s in re.split(r'[;,]', skills_field) if s.strip()]
-                break
-        # Merge all proficiencies (race + background, no duplicates)
-        all_proficiencies = set(selected_race_skills)
-        all_proficiencies.update(background_skills)
-
+        
         # Calculate proficiency bonus based on character level (placeholder - using level 1)
         proficiency_bonus = 2  # Level 1-4 = +2, could be calculated based on actual level
-
+        
         # Skill to ability mapping
         skill_ability_map = {
             'Acrobatics': 'DEX',
@@ -1677,15 +1658,18 @@ class MagicItemGenerator(QMainWindow):
         # Build skill data with proficiency
         skill_data = {}
         skill_checkboxes = {}
+        
         for skill, ability in skill_ability_map.items():
             base_mod = mods[ability]
-            is_proficient = skill in all_proficiencies
+            is_proficient = skill in selected_race_skills
+            
             if is_proficient:
                 skill_modifier = base_mod + proficiency_bonus
                 skill_checkboxes[skill] = True
             else:
                 skill_modifier = base_mod
                 skill_checkboxes[skill] = False
+            
             skill_data[skill] = f"{skill_modifier:+d}"
 
         pdf_data = {
@@ -1732,7 +1716,25 @@ class MagicItemGenerator(QMainWindow):
             'Religion': skill_data['Religion'],
             'SleightofHand': skill_data['Sleight of Hand'],
             'Stealth ': skill_data['Stealth'],
-            'Survival': skill_data['Survival'],
+            'Survival': skill_data['Survival'],            # Skill proficiency checkboxes (Check Box 23-40)
+            'Check Box 23': 'Yes' if skill_checkboxes['Acrobatics'] else 'Off',
+            'Check Box 24': 'Yes' if skill_checkboxes['Animal Handling'] else 'Off',
+            'Check Box 25': 'Yes' if skill_checkboxes['Arcana'] else 'Off',
+            'Check Box 26': 'Yes' if skill_checkboxes['Athletics'] else 'Off',
+            'Check Box 27': 'Yes' if skill_checkboxes['Deception'] else 'Off',
+            'Check Box 28': 'Yes' if skill_checkboxes['History'] else 'Off',
+            'Check Box 29': 'Yes' if skill_checkboxes['Insight'] else 'Off',
+            'Check Box 30': 'Yes' if skill_checkboxes['Intimidation'] else 'Off',
+            'Check Box 31': 'Yes' if skill_checkboxes['Investigation'] else 'Off',
+            'Check Box 32': 'Yes' if skill_checkboxes['Medicine'] else 'Off',
+            'Check Box 33': 'Yes' if skill_checkboxes['Nature'] else 'Off',
+            'Check Box 34': 'Yes' if skill_checkboxes['Perception'] else 'Off',
+            'Check Box 35': 'Yes' if skill_checkboxes['Performance'] else 'Off',
+            'Check Box 36': 'Yes' if skill_checkboxes['Persuasion'] else 'Off',
+            'Check Box 37': 'Yes' if skill_checkboxes['Religion'] else 'Off',
+            'Check Box 38': 'Yes' if skill_checkboxes['Sleight of Hand'] else 'Off',
+            'Check Box 39': 'Yes' if skill_checkboxes['Stealth'] else 'Off',
+            'Check Box 40': 'Yes' if skill_checkboxes['Survival'] else 'Off',
             # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
             'PersonalityTraits': '',
             'Ideals': '',
@@ -1755,17 +1757,6 @@ class MagicItemGenerator(QMainWindow):
             # Currency (placeholders)
             'CP': '', 'SP': '', 'EP': '', 'GP': '', 'PP': '',
         }
-        # Add correct skill proficiency checkboxes (Check Box 23-40)
-        skill_checkbox_order = [
-            'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception', 'History',
-            'Insight', 'Intimidation', 'Investigation', 'Medicine', 'Nature', 'Perception',
-            'Performance', 'Persuasion', 'Religion', 'Sleight of Hand', 'Stealth', 'Survival'
-        ]
-        for i, skill in enumerate(skill_checkbox_order, start=23):
-            pdf_data[f'Check Box {i}'] = 'Yes' if skill_checkboxes.get(skill, False) else 'Off'
-        # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
-        # Equipment and features (placeholders, could add UI fields)
-        # Currency (placeholders)
         template_path = 'character_sheet_template.pdf'
         output_path = f"{char_name.replace(' ', '_')}.pdf"
         try:
@@ -1882,7 +1873,9 @@ class MagicItemGenerator(QMainWindow):
 
     def get_selected_race_skills(self):
         # Return the list of selected skills for the race
-        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]    
+        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]    def get_selected_race_skills(self):
+        # Return the list of selected skills for the race
+        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]
 
     def export_character_to_pdf(self):
         try:
@@ -1892,7 +1885,7 @@ class MagicItemGenerator(QMainWindow):
             return
         # Gather data from UI
         char_name = self.char_name_edit.text().strip() or 'Unnamed'
-        alignment = self.alignment_combo.currentText()
+        alignment = self.alignment_edit.text().strip()
         player_name = self.player_name_edit.text().strip()
         class_name = self.class_combo.currentText()
         level = self.level_spin.value()
@@ -1960,24 +1953,10 @@ class MagicItemGenerator(QMainWindow):
                         race_languages = val
                         break        # Get selected race skill proficiencies
         selected_race_skills = self.get_selected_race_skills()
-
-        # Get background skill proficiencies
-        background_skills = []
-        for row in self.background_data:
-            if row['name'].strip() == background:
-                skills_field = row.get('Skills', '')
-                if skills_field:
-                    # Split on semicolon or comma, strip whitespace, ignore empty
-                    import re
-                    background_skills = [s.strip() for s in re.split(r'[;,]', skills_field) if s.strip()]
-                break
-        # Merge all proficiencies (race + background, no duplicates)
-        all_proficiencies = set(selected_race_skills)
-        all_proficiencies.update(background_skills)
-
+        
         # Calculate proficiency bonus based on character level (placeholder - using level 1)
         proficiency_bonus = 2  # Level 1-4 = +2, could be calculated based on actual level
-
+        
         # Skill to ability mapping
         skill_ability_map = {
             'Acrobatics': 'DEX',
@@ -2003,15 +1982,18 @@ class MagicItemGenerator(QMainWindow):
         # Build skill data with proficiency
         skill_data = {}
         skill_checkboxes = {}
+        
         for skill, ability in skill_ability_map.items():
             base_mod = mods[ability]
-            is_proficient = skill in all_proficiencies
+            is_proficient = skill in selected_race_skills
+            
             if is_proficient:
                 skill_modifier = base_mod + proficiency_bonus
                 skill_checkboxes[skill] = True
             else:
                 skill_modifier = base_mod
                 skill_checkboxes[skill] = False
+            
             skill_data[skill] = f"{skill_modifier:+d}"
 
         pdf_data = {
@@ -2059,6 +2041,25 @@ class MagicItemGenerator(QMainWindow):
             'SleightofHand': skill_data['Sleight of Hand'],
             'Stealth ': skill_data['Stealth'],
             'Survival': skill_data['Survival'],
+            # Skill proficiency checkboxes (Check Box 23-40)
+            'Check Box 23': 'Yes' if skill_checkboxes['Acrobatics'] else 'Off',
+            'Check Box 24': 'Yes' if skill_checkboxes['Animal Handling'] else 'Off',
+            'Check Box 25': 'Yes' if skill_checkboxes['Arcana'] else 'Off',
+            'Check Box 26': 'Yes' if skill_checkboxes['Athletics'] else 'Off',
+            'Check Box 27': 'Yes' if skill_checkboxes['Deception'] else 'Off',
+            'Check Box 28': 'Yes' if skill_checkboxes['History'] else 'Off',
+            'Check Box 29': 'Yes' if skill_checkboxes['Insight'] else 'Off',
+            'Check Box 30': 'Yes' if skill_checkboxes['Intimidation'] else 'Off',
+            'Check Box 31': 'Yes' if skill_checkboxes['Investigation'] else 'Off',
+            'Check Box 32': 'Yes' if skill_checkboxes['Medicine'] else 'Off',
+            'Check Box 33': 'Yes' if skill_checkboxes['Nature'] else 'Off',
+            'Check Box 34': 'Yes' if skill_checkboxes['Perception'] else 'Off',
+            'Check Box 35': 'Yes' if skill_checkboxes['Performance'] else 'Off',
+            'Check Box 36': 'Yes' if skill_checkboxes['Persuasion'] else 'Off',
+            'Check Box 37': 'Yes' if skill_checkboxes['Religion'] else 'Off',
+            'Check Box 38': 'Yes' if skill_checkboxes['Sleight of Hand'] else 'Off',
+            'Check Box 39': 'Yes' if skill_checkboxes['Stealth'] else 'Off',
+            'Check Box 40': 'Yes' if skill_checkboxes['Survival'] else 'Off',
             # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
             'PersonalityTraits': '',
             'Ideals': '',
@@ -2081,17 +2082,6 @@ class MagicItemGenerator(QMainWindow):
             # Currency (placeholders)
             'CP': '', 'SP': '', 'EP': '', 'GP': '', 'PP': '',
         }
-        # Add correct skill proficiency checkboxes (Check Box 23-40)
-        skill_checkbox_order = [
-            'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception', 'History',
-            'Insight', 'Intimidation', 'Investigation', 'Medicine', 'Nature', 'Perception',
-            'Performance', 'Persuasion', 'Religion', 'Sleight of Hand', 'Stealth', 'Survival'
-        ]
-        for i, skill in enumerate(skill_checkbox_order, start=23):
-            pdf_data[f'Check Box {i}'] = 'Yes' if skill_checkboxes.get(skill, False) else 'Off'
-        # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
-        # Equipment and features (placeholders, could add UI fields)
-        # Currency (placeholders)
         template_path = 'character_sheet_template.pdf'
         output_path = f"{char_name.replace(' ', '_')}.pdf"
         try:
