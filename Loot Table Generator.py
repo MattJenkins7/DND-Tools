@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QFileDialog, QMessageBox, QSpinBox, QDoubleSpinBox, QStatusBar, QAbstractItemView, QHeaderView,
     QScrollArea, QToolButton, QSizePolicy, QFrame, QListWidget, QCheckBox
 )
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, QEvent, QTimer
 from PySide6.QtGui import QKeySequence
 import os
 import csv
@@ -1133,6 +1133,74 @@ class MagicItemGenerator(QMainWindow):
         self.race_combo.currentTextChanged.connect(self.update_proficiency_dropdowns)
         self.update_proficiency_dropdowns(self.race_combo.currentText())
 
+        # --- Class Skill Proficiencies Section ---
+        self.class_proficiency_widget = QWidget()
+        self.class_proficiency_layout = QVBoxLayout()
+        self.class_proficiency_widget.setLayout(self.class_proficiency_layout)
+        self.class_proficiency_dropdowns = []
+        char_layout.addWidget(QLabel('Class Skill Proficiencies:'))
+        char_layout.addWidget(self.class_proficiency_widget)
+
+        def update_class_proficiency_dropdowns(class_name):
+            # Clear old dropdowns
+            for dropdown in self.class_proficiency_dropdowns:
+                self.class_proficiency_layout.removeWidget(dropdown)
+                dropdown.deleteLater()
+            self.class_proficiency_dropdowns.clear()
+            self.required_class_skills = 0
+            self.allowed_class_skills = []
+            if not class_name or class_name == 'None':
+                print('[DEBUG] No class selected for class proficiencies')
+                return
+            for entry in self.class_data:
+                if entry.get('name', '').strip() == class_name:
+                    proficiencies = entry.get('proficiencies', {})
+                    skills_field = proficiencies.get('skills', [])
+                    print(f'[DEBUG] Found class: {class_name}, skills_field: {skills_field}')
+                    if skills_field and isinstance(skills_field, list) and len(skills_field) > 1:
+                        try:
+                            num_to_choose = int(skills_field[0])
+                        except Exception:
+                            num_to_choose = 2 # fallback to 2 if not valid
+                        skills = [s for s in skills_field[1:]]
+                        self.required_class_skills = num_to_choose
+                        self.allowed_class_skills = skills
+                        for i in range(num_to_choose):
+                            dropdown = QComboBox()
+                            dropdown.addItem('-- Select Skill --')
+                            dropdown.addItems(skills)
+                            dropdown.currentTextChanged.connect(prevent_duplicate_class_selections)
+                            self.class_proficiency_layout.addWidget(dropdown)
+                            self.class_proficiency_dropdowns.append(dropdown)
+                        print(f'[DEBUG] Created {num_to_choose} class skill dropdowns with options: {skills}')
+                    else:
+                        print(f'[DEBUG] No valid skills_field for class: {class_name}')
+                    break
+
+        def prevent_duplicate_class_selections():
+            selected_skills = [dropdown.currentText() for dropdown in self.class_proficiency_dropdowns 
+                             if dropdown.currentText() != '-- Select Skill --']
+            for dropdown in self.class_proficiency_dropdowns:
+                current_selection = dropdown.currentText()
+                dropdown.blockSignals(True)
+                dropdown.clear()
+                dropdown.addItem('-- Select Skill --')
+                for skill in self.allowed_class_skills:
+                    if skill not in selected_skills or skill == current_selection:
+                        dropdown.addItem(skill)
+                dropdown.setCurrentText(current_selection)
+                dropdown.blockSignals(False)
+
+        def get_selected_class_skills():
+            return [dropdown.currentText() for dropdown in self.class_proficiency_dropdowns 
+                   if dropdown.currentText() != '-- Select Skill --']
+
+        self.update_class_proficiency_dropdowns = update_class_proficiency_dropdowns
+        self.get_selected_class_skills = get_selected_class_skills
+        self.class_combo.currentTextChanged.connect(self.update_class_proficiency_dropdowns)
+        # Call after UI is fully constructed
+        QTimer.singleShot(0, lambda: self.update_class_proficiency_dropdowns(self.class_combo.currentText()))
+
         # --- Export to PDF Button (moved to bottom) ---
         export_pdf_btn = QPushButton('Export to PDF')
         export_pdf_btn.clicked.connect(self.export_character_to_pdf)
@@ -1699,7 +1767,7 @@ class MagicItemGenerator(QMainWindow):
         # Explicitly append extracted proficiency/language lines to features_and_traits
         if 'extracted_lines_for_prof_lang' in locals() and isinstance(extracted_lines_for_prof_lang, list) and extracted_lines_for_prof_lang:
             if features_and_traits:
-                features_and_traits += '\n\n' # Add a separator
+                features_and_traits += '\n\n'
             # Clean each line before joining, similar to ProficienciesLang handling
             cleaned_extracted_lines = [str(line).strip() for line in extracted_lines_for_prof_lang]
 
@@ -1774,6 +1842,51 @@ class MagicItemGenerator(QMainWindow):
                 skill_checkboxes[skill] = False
             skill_data[skill] = f"{skill_modifier:+d}"
 
+        # Add class skill proficiencies to skill checkboxes
+        selected_class_skills = self.get_selected_class_skills() if hasattr(self, 'get_selected_class_skills') else []
+        for skill in selected_class_skills:
+            if skill in skill_checkboxes:                skill_checkboxes[skill] = False
+            skill_data[skill] = f"{skill_modifier:+d}"
+
+        # Handle equipment start vs gold start choice
+        equipment_choice = self.prompt_equipment_choice()
+        equipment_list = []
+        starting_gold = 0
+        
+        if equipment_choice == 'equipment':
+            # Get starting equipment from class data
+            for entry in self.class_data:
+                if entry.get('name', '').strip() == class_name:
+                    starting_equipment = entry.get('starting_equipment', {})
+                    
+                    # Add armor
+                    armor = starting_equipment.get('armor', [])
+                    equipment_list.extend(armor)
+                    
+                    # Add weapons  
+                    weapons = starting_equipment.get('weapons', [])
+                    equipment_list.extend(weapons)
+                    
+                    # Add gear
+                    gear = starting_equipment.get('gear', [])
+                    equipment_list.extend(gear)
+                    
+                    # Add starting gold from equipment
+                    starting_gold = starting_equipment.get('gold', 0)
+                    break
+        else:  # gold start
+            # Get gold_start amount from class data
+            for entry in self.class_data:
+                if entry.get('name', '').strip() == class_name:
+                    starting_gold = entry.get('gold_start', 0)
+                    break
+
+        # Add class skill proficiencies to skill checkboxes
+        selected_class_skills = self.get_selected_class_skills() if hasattr(self, 'get_selected_class_skills') else []
+        for skill in selected_class_skills:
+            if skill in skill_checkboxes:
+                skill_checkboxes[skill] = True
+
         pdf_data = {
             'CharacterName': char_name,
             'ClassLevel': f'{class_name} {level}',
@@ -1825,7 +1938,7 @@ class MagicItemGenerator(QMainWindow):
             'Bonds': '',
             'Flaws': '',
             # Equipment and features (placeholders, could add UI fields)
-            'Equipment': '',
+            'Equipment': '\n'.join(equipment_list),
             'Features and Traits': features_and_traits,
             'AttacksSpellcasting': attacks_spellcasting,
             'ProficienciesLang': race_languages,
@@ -1839,7 +1952,7 @@ class MagicItemGenerator(QMainWindow):
             'HPCurrent': '',
             'HPTemp': '',
             # Currency (placeholders)
-            'CP': '', 'SP': '', 'EP': '', 'GP': '', 'PP': '',
+            'CP': '', 'SP': '', 'EP': '', 'GP': str(starting_gold), 'PP': '',
         }
 
         # CORRECTED LOGIC for ProficienciesLang content and line breaks:
@@ -1864,6 +1977,30 @@ class MagicItemGenerator(QMainWindow):
 
         pdf_data['ProficienciesLang'] = current_prof_lang_text
         # END CORRECTED LOGIC
+
+        # Add saving throw proficiencies
+        selected_class_name = self.class_combo.currentText()
+        class_saving_throws = []
+        if hasattr(self, 'class_data'):
+            for c_data in self.class_data:
+                if c_data.get('name') == selected_class_name:
+                    class_saving_throws = [s.lower() for s in c_data.get('saving_throws', [])] # Ensure lowercase for comparison
+                    break
+        
+        saving_throw_map = {
+            "strength": "Check Box 11",
+            "dexterity": "Check Box 18",
+            "constitution": "Check Box 19",
+            "intelligence": "Check Box 20",
+            "wisdom": "Check Box 21",
+            "charisma": "Check Box 22"
+        }
+
+        for save_name, pdf_field in saving_throw_map.items():
+            if save_name in class_saving_throws:
+                pdf_data[pdf_field] = 'Yes'
+            else:
+                pdf_data[pdf_field] = 'Off'
 
         # Add correct skill proficiency checkboxes (Check Box 23-40)
         skill_checkbox_order = [
@@ -1893,6 +2030,21 @@ class MagicItemGenerator(QMainWindow):
             QMessageBox.information(self, 'PDF Exported', f'Character sheet saved as {output_path}')
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'Failed to export PDF: {e}')
+
+    def prompt_equipment_choice(self):
+        """Prompt user to choose between equipment start or gold start"""
+        from PySide6.QtWidgets import QMessageBox
+        msg = QMessageBox(self)
+        msg.setWindowTitle('Starting Equipment')
+        msg.setText('Choose your starting equipment option:')
+        equipment_btn = msg.addButton('Equipment Start', QMessageBox.ActionRole)
+        gold_btn = msg.addButton('Gold Start', QMessageBox.ActionRole)
+        msg.exec()
+        
+        if msg.clickedButton() == equipment_btn:
+            return 'equipment'
+        else:
+            return 'gold'
 
     def on_race_changed(self):
         race_name = self.race_combo.currentText()

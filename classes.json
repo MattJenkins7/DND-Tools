@@ -105,9 +105,23 @@
     {
       "name": "Barbarian",
       "hit_die": "d12",
-      "primary_abilities": ["Strength", "Constitution"],
+      "primary_abilities": ["Strength"],
+      "saving_throws": ["Strength", "Constitution"],
       "subclass_pick_level": 3,
       "caster_type": "none",
+      "proficiencies": {
+        "armor": ["light", "medium", "shields"],
+        "weapons": ["simple", "martial"],
+        "tools": [],
+        "skills": ["2", "Animal Handling", "Athletics", "Intimidation", "Nature", "Perception", "Survival"]
+      },
+      "starting_equipment": {
+        "armor": [],
+        "weapons": ["Greataxe", "Handaxe", "Handaxe", "Handaxe", "Handaxe"],
+        "gold": 15,
+        "gear": ["Explorer's pack"]
+      },
+      "gold_start": 110,
       "features": {
         "1": [
           {"name": "Rage", "description": "Enter a rage as a bonus action. While raging, gain bonus damage to Strength-based melee attacks, resistance to bludgeoning, piercing, and slashing damage, and advantage on Strength checks and saves. Cannot cast spells while raging."},
@@ -197,8 +211,22 @@
       "name": "Bard",
       "hit_die": "d8",
       "primary_abilities": ["Charisma"],
+      "saving_throws": ["Dexterity", "Charisma"],
       "subclass_pick_level": 3,
       "caster_type": "full",
+      "proficiencies": {
+        "armor": ["light"],
+        "weapons": ["simple"],
+        "tools": ["instrumentchoice", "instrumentchoice", "instrumentchoice"],
+        "skills": ["3", "Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"]
+      },
+      "starting_equipment": {
+        "armor": ["Leather Armor"],
+        "weapons": ["Dagger", "Dagger"],
+        "gold": 11,
+        "gear": ["Entertainer's pack", "profitem"]
+      },
+      "gold_start": 90,
       "features": {
         "1": [
           {"name": "Spellcasting", "description": "You can cast bard spells using Charisma as your spellcasting ability. You know a number of spells and can cast them using spell slots."},
@@ -298,8 +326,22 @@
       "name": "Cleric",
       "hit_die": "d8",
       "primary_abilities": ["Wisdom"],
+      "saving_throws": ["Wisdom", "Charisma"],
       "subclass_pick_level": 1,
       "caster_type": "full",
+      "proficiencies": {
+        "armor": ["light", "medium", "shields"],
+        "weapons": ["simple"],
+        "tools": [],
+        "skills": ["2", "History", "Insight", "Medicine", "Perception", "Religion"]
+      },
+      "starting_equipment": {
+        "armor": ["Chain Shirt", "Shield"],
+        "weapons": ["Mace"],
+        "gold": 7,
+        "gear": ["Holy Symbol", "Priest's pack"]
+      },
+      "gold_start": 110,
       "features": {
         "1": [
           {"name": "Spellcasting", "description": "You can cast cleric spells using Wisdom as your spellcasting ability. You prepare spells from the cleric spell list."},
@@ -417,8 +459,22 @@
       "name": "Druid",
       "hit_die": "d8",
       "primary_abilities": ["Wisdom"],
+      "saving_throws": ["Intelligence", "Wisdom"],
       "subclass_pick_level": 2,
       "caster_type": "full",
+      "proficiencies": {
+        "armor": ["light", "shields"],
+        "weapons": ["simple"],
+        "tools": ["herbalism kit"],
+        "skills": ["2", "Arcana", "Animal Handling", "Athletics", "Medicine", "Insight", "Nature", "Religion", "Perception", "Survival"]
+      },
+      "starting_equipment": {
+        "armor": ["Leather Armor", "Shield"],
+        "weapons": ["Sickle", "Flail"],
+        "gold": 9,
+        "gear": ["Druidic Focus", "Explorer's pack", "Herbalism Kit"]
+      },
+      "gold_start": 50,
       "features": {
         "1": [
           {"name": "Druidic", "description": "You know Druidic, the secret language of druids. You can speak and read it, and can leave hidden messages in natural settings."},
@@ -481,9 +537,23 @@
     {
       "name": "Fighter",
       "hit_die": "d10",
-      "primary_abilities": ["Strength", "Dexterity"],
+      "primary_abilities": ["Strength"],
+      "saving_throws": ["Strength", "Constitution"],
       "subclass_pick_level": 3,
       "caster_type": "none",
+      "proficiencies": {
+        "armor": ["light", "medium", "heavy", "shields"],
+        "weapons": ["simple", "martial"],
+        "tools": [],
+        "skills": ["2", "Acrobatics", "Animal Handling", "Athletics", "History", "Insight", "Intimidation", "Persuasion", "Perception", "Survival"]
+      },
+      "starting_equipment": {
+        "armor": ["Studded Leather Armor"],
+        "weapons": ["Greatsword", "Flail", "Javelin", "Javelin", "Javelin", "Javelin", "Javelin", "Javelin", "Javelin", "Javelin"],
+        "gold": 11,
+        "gear": ["Dungeoneer's pack", "Explorer's pack"]
+      },
+      "gold_start": 155,
       "features": {
         "1": [
           {"name": "Fighting Style", "description": "Choose a fighting style: Archery (+2 to ranged attacks), Defense (+1 AC with armor), Dueling (+2 damage with one-handed weapons), Great Weapon Fighting (reroll 1s and 2s on two-handed weapons), Protection (use shield to impose disadvantage), or Two-Weapon Fighting (add ability modifier to off-hand attacks)."},
@@ -581,9 +651,23 @@
     {
       "name": "Monk",
       "hit_die": "d8",
-      "primary_abilities": ["Dexterity", "Wisdom"],
+      "primary_abilities": ["Dexterity"],
+      "saving_throws": ["Strength", "Dexterity"],
       "subclass_pick_level": 3,
       "caster_type": "none",
+      "proficiencies": {
+        "armor": [],
+        "weapons": ["simple", "light, martial"],
+        "tools": ["artisaninstrumentchoice"],
+        "skills": ["2", "Athletics", "Acrobatics", "History", "Insight", "Stealth", "Religion"]
+      },
+      "starting_equipment": {
+        "armor": [],
+        "weapons": ["Dagger", "Dagger", "Dagger", "Dagger", "Dagger", "simple"],
+        "gold": 11,
+        "gear": ["profitem", "Explorer's pack"]
+      },
+      "gold_start": 50,
       "features": {
         "1": [
           {"name": "Unarmored Defense", "description": "While wearing no armor and not wielding a shield, your AC equals 10 + your Dexterity modifier + your Wisdom modifier."},
@@ -687,9 +771,23 @@
     {
       "name": "Paladin",
       "hit_die": "d10",
-      "primary_abilities": ["Strength", "Charisma"],
+      "primary_abilities": ["Charisma"],
+      "saving_throws": ["Wisdom", "Charisma"],
       "subclass_pick_level": 3,
       "caster_type": "half",
+      "proficiencies": {
+        "armor": ["light armor", "medium armor", "heavy armor", "shields"],
+        "weapons": ["simple", "martial"],
+        "tools": [],
+        "skills": ["2", "Athletics", "Intimidation", "Insight", "Medicine", "Religion", "Persuasion"]
+      },
+      "starting_equipment": {
+        "armor": ["Chain Mail", "Shield"],
+        "weapons": ["Longsword", "Javelin", "Javelin", "Javelin", "Javelin", "Javelin", "Javelin"],
+        "gold": 9,
+        "gear": ["Holy Symbol", "Priest's Pack"]
+      },
+      "gold_start": 150,
       "features": {
         "1": [
           {"name": "Divine Sense", "description": "You can detect good and evil. As an action, you can detect celestials, fiends, and undead within 60 feet, as well as consecrated or desecrated objects. You can use this feature a number of times equal to 1 + your Charisma modifier per long rest."},
@@ -775,9 +873,23 @@
     {
       "name": "Ranger",
       "hit_die": "d10",
-      "primary_abilities": ["Dexterity", "Wisdom"],
+      "primary_abilities": ["Wisdom"],
+      "saving_throws": ["Strength", "Dexterity"],
       "subclass_pick_level": 3,
       "caster_type": "half",
+      "proficiencies": {
+        "armor": ["light armor", "medium armor", "shields"],
+        "weapons": ["simple", "martial"],
+        "tools": [],
+        "skills": ["3", "Animal Handling", "Athletics", "Insight", "Investigation", "Nature", "Perception", "Stealth", "Survival"]
+      },
+      "starting_equipment": {
+        "armor": ["Studded Leather Armor"],
+        "weapons": ["Scimitar", "Shortsword", "Longbow"],
+        "gold": 7,
+        "gear": ["Druidic Focus", "Explorer's pack"]
+      },
+      "gold_start": 150,
       "features": {
         "1": [
           {"name": "Favored Enemy", "description": "Choose a type of creature you have specialized knowledge of. You have advantage on Wisdom (Survival) checks to track your favored enemies, as well as on Intelligence checks to recall information about them."},
@@ -858,8 +970,23 @@
       "name": "Rogue",
       "hit_die": "d8",
       "primary_abilities": ["Dexterity"],
+      "saving_throws": ["Dexterity", "Intelligence"],
       "subclass_pick_level": 3,
       "caster_type": "none",
+      "proficiencies": {
+        "armor": ["light armor"],
+        "weapons": ["simple weapons", "finesse", "light"],
+        "tools": ["thieves' tools"],
+        "skills": ["4", "Acrobatics", "Athletics", "Deception", "Insight", "Intimidation", "Investigation", "Perception", "Persuasion", "Sleight of Hand", "Stealth"]
+      },
+      "starting_equipment": {
+        "armor": ["Leather armor"],
+        "weapons": ["Rapier", "Shortbow", "Dagger", "Dagger"],
+        "gold": 8,
+        "gear": ["Thieves' tools", "Burglar's pack"]
+      },
+      
+      "gold_start": 100,
       "features": {
         "1": [
           {"name": "Expertise", "description": "Choose two of your skill proficiencies, or one of your skill proficiencies and your proficiency with thieves' tools. Your proficiency bonus is doubled for any ability check you make that uses either of the chosen proficiencies."},
@@ -956,8 +1083,22 @@
       "name": "Warlock",
       "hit_die": "d8",
       "primary_abilities": ["Charisma"],
+      "saving_throws": ["Wisdom", "Charisma"],
       "subclass_pick_level": 1,
       "caster_type": "warlock",
+      "proficiencies": {
+        "armor": ["light armor"],
+        "weapons": ["simple"],
+        "tools": [],
+        "skills": ["2", "Arcana", "Deception", "History", "Intimidation", "Investigation", "Nature", "Religion"]
+      },
+      "starting_equipment": {
+        "armor": ["Leather Armor"],
+        "weapons": ["Dagger", "Dagger", "simple"],
+        "gold": 15,
+        "gear": ["Arcane Focus", "Scholar's pack"]
+      },
+      "gold_start": 100,
       "features": {
         "1": [
           {"name": "Otherworldly Patron", "description": "You have struck a pact with an otherworldly being of your choice that grants you features at 1st, 6th, 10th, and 14th level."},
@@ -1050,8 +1191,22 @@
       "name": "Wizard",
       "hit_die": "d6",
       "primary_abilities": ["Intelligence"],
+      "saving_throws": ["Intelligence", "Wisdom"],
       "subclass_pick_level": 2,
       "caster_type": "full",
+      "proficiencies": {
+        "armor": [],
+        "weapons": ["simple"],
+        "tools": [],
+        "skills": ["2", "Arcana", "History", "Insight", "Investigation", "Medicine", "Religion"]
+      },
+      "starting_equipment": {
+        "armor": ["Robe"],
+        "weapons": ["Dagger", "Dagger"],
+        "gold": 5,
+        "gear": ["Spellbook", "Scholar's pack", "Arcane Focus"]
+      },
+      "gold_start": 55,
       "features": {
         "1": [
           {"name": "Spellcasting", "description": "You can cast wizard spells using Intelligence as your spellcasting ability. You prepare spells from your spellbook, and you can cast spells as rituals if they have the ritual tag."},
@@ -1132,8 +1287,22 @@
       "name": "Sorcerer",
       "hit_die": "d6",
       "primary_abilities": ["Charisma"],
+      "saving_throws": ["Constitution", "Charisma"],
       "subclass_pick_level": 1,
       "caster_type": "full",
+      "proficiencies": {
+        "armor": [],
+        "weapons": ["simple"],
+        "tools": [],
+        "skills": ["2", "Arcana", "Deception", "Insight", "Intimidation", "Persuasion", "Religion"]
+      },
+      "starting_equipment": {
+        "armor": [],
+        "weapons": ["Dagger", "Dagger", "simple"],
+        "gold": 28,
+        "gear": ["Arcane Focus", "Dungeoneer's pack"]
+      },
+      "gold_start": 50,
       "features": {
         "1": [
           {"name": "Spellcasting", "description": "You can cast sorcerer spells using Charisma as your spellcasting ability. You know a number of spells from the sorcerer spell list and can cast them without preparing them in advance."},
@@ -1220,8 +1389,22 @@
         "name": "Artificer",
         "hit_die": "d8",
         "primary_abilities": ["Intelligence"],
+        "saving_throws": ["Constitution", "Intelligence"],
         "subclass_pick_level": 3,
         "caster_type": "half",
+        "proficiencies": {
+          "armor": ["light", "medium", "shields"],
+          "weapons": ["simple", "firearms"],
+          "tools": ["thieves' tools", "tinkerer's tools", "artisanchoice"],
+          "skills": ["2", "Arcana", "History", "Investigation", "Medicine", "Nature", "Perception", "Sleight of Hand", "Survival"]
+        },
+        "starting_equipment": {
+          "armor": ["Leather Armor"],
+          "weapons": ["simple", "simple", "Light Crossbow"],
+          "gold": 0,
+          "gear": ["Thieves' Tools", "Dungeoneer's pack"]
+        },
+        "gold_start": 100,
         "features": {
           "1": [
             {"name": "Magical Tinkering", "description": "You have learned how to imbue tiny objects with minor magical properties. At the end of a long rest, you can touch a tiny nonmagical object as an action and give it one of the following magical properties of your choice: shed bright light, record and playback a message, emit an odor or sound. You can have a number of objects affected equal to your Intelligence modifier."},
