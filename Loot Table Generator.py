@@ -13,6 +13,7 @@ import random
 import difflib
 import functools
 import json
+import re
 
 RARITY_VALUES = {
     'common': 50,
@@ -1553,6 +1554,7 @@ class MagicItemGenerator(QMainWindow):
         return asi_result    
     
     def export_character_to_pdf(self):
+        import re # Ensure re module is available in this scope
         # Check that the required number of race skill proficiencies are selected
         selected_skills = self.get_selected_race_skills()
         if self.required_race_skills and len(selected_skills) < self.required_race_skills:
@@ -1590,8 +1592,8 @@ class MagicItemGenerator(QMainWindow):
             if row['name'].strip() == race:
                 for key, val in row.items():
                     if key and val and key.strip().lower() == 'features':
-                        features = str(val).replace('\\n', '\n').replace('\r\n', '\n').replace('\r', '\n').strip()
-                        for f in [f.strip() for f in features.split('\n') if f.strip()]:
+                        features = str(val).replace('\\\\n', '\\n').replace('\\r\\n', '\\n').replace('\\r', '\\n').strip()
+                        for f in [f.strip() for f in features.split('\\n') if f.strip()]:
                             if is_attack_feature(f):
                                 race_attacks.append(f)
                             else:
@@ -1599,17 +1601,93 @@ class MagicItemGenerator(QMainWindow):
                         break
         bg_features = []
         bg_attacks = []
+        # Load feats data
+        feats_data = []
+        try:
+            with open('feats.csv', 'r', encoding='utf-8') as f_feats:
+                reader_feats = csv.DictReader(f_feats)
+                feats_data = list(reader_feats)
+        except Exception as e:
+            print(f"Error loading feats.csv: {e}") # Or handle more gracefully
+
         for row in self.background_data:
             if row['name'].strip() == background:
+                print(f"[DEBUG] Selected background for PDF export: {background}") # DEBUG
                 for key, val in row.items():
-                    if key and val and key.strip().lower() == 'features':
-                        features = str(val).replace('\\n', '\n').replace('\r\n', '\n').replace('\r', '\n').strip()
-                        for f in [f.strip() for f in features.split('\n') if f.strip()]:
-                            if is_attack_feature(f):
-                                bg_attacks.append(f)
+                    if key and val and key.strip().lower() == 'description':
+                        description_text = str(val).replace('\\\\n', '\\n').replace('\\r\\n', '\\n').replace('\\r', '\\n').strip()
+                        print(f"[DEBUG] Raw background description text: '{description_text}'") # DEBUG
+                        description_lines = [line.strip() for line in description_text.split('\\n') if line.strip()]
+                        feat_to_add = None
+                        feat_description_to_add = ""
+
+                        for line in description_lines:
+                            print(f"[DEBUG] Processing line: '{line}'") # DEBUG
+                            # MODIFIED: Check if "origin feat:" is IN the line, not just at the start
+                            if "origin feat:" in line.lower():
+                                print(f"[DEBUG] Line CONTAINS 'origin feat:': '{line}'") # DEBUG
+                                # Corrected regex
+                                feat_name_match = re.search(r"origin feat: *\\*?([^\\*]+)\\*?", line, re.IGNORECASE)
+                                if feat_name_match:
+                                    feat_to_add = feat_name_match.group(1).strip()
+                                    print(f"[DEBUG] Regex matched. Extracted feat_to_add: '{feat_to_add}'") # DEBUG
+                                    
+                                    feat_description_to_add = "" # Reset for current feat
+                                    for feat_row in feats_data:
+                                        if feat_row.get('Feat', '').strip().lower() == feat_to_add.lower():
+                                            feat_description_to_add = feat_row.get('Description', '').strip()
+                                            print(f"[DEBUG] Found matching feat in feats.csv. Description: '{feat_description_to_add}'") # DEBUG
+                                            break
+                                    else:
+                                        print(f"[DEBUG] No matching feat found in feats.csv for '{feat_to_add}'") # DEBUG
+
+                                    if feat_to_add: # This is the original debug location
+                                        print(f"[DEBUG] Origin Feat Found (final check): {feat_to_add}")
+                                        print(f"[DEBUG] Feat Description (final check): {feat_description_to_add}")
+                                    else:
+                                        print(f"[DEBUG] feat_to_add is None or empty after regex match and description lookup.") # DEBUG
+                                else:
+                                    print(f"[DEBUG] Regex did NOT match for line starting with 'origin feat:': '{line}'") # DEBUG
+                                # Remove the "Origin Feat:" line from being added as a normal feature
+                                continue # Skip adding this line to bg_features
+                            
+                            # Process other lines as regular features or attacks
+                            if is_attack_feature(line):
+                                bg_attacks.append(line)
                             else:
-                                bg_features.append(f)
+                                bg_features.append(line)
+                        
+                        if feat_to_add:
+                            feat_text = f"Feat: {feat_to_add}"
+                            if feat_description_to_add:
+                                feat_text += f" - {feat_description_to_add}"
+                            bg_features.append(feat_text) # Add the formatted feat string
+                        break # Found background description
+                break # Found background
+
+        # CORRECTED LOGIC:
+        # Iterate over copies of race_features and bg_features to find lines for ProficienciesLang
+        # This ensures the original lists used for 'Features and Traits' are not modified.
+        prof_lang_keywords = ["proficiency", "proficiencies", "language", "languages"]
+        extracted_lines_for_prof_lang = []
+
+        # Populate from a copy of race_features
+        if 'race_features' in locals() and isinstance(race_features, list):
+            for feature_line in list(race_features): # Iterate over a copy
+                for keyword in prof_lang_keywords:
+                    if keyword in feature_line.lower():
+                        extracted_lines_for_prof_lang.append(feature_line)
+                        break 
+        
+        # Populate from a copy of bg_features
+        if 'bg_features' in locals() and isinstance(bg_features, list):
+            for feature_line in list(bg_features): # Iterate over a copy
+                for keyword in prof_lang_keywords:
+                    if keyword in feature_line.lower(): # Check the whole line
+                        extracted_lines_for_prof_lang.append(feature_line)
                         break
+        # END CORRECTED LOGIC
+
         features_and_traits = ''
         if race_features:
             features_and_traits += f"Race Features ({race}):\n" + '\n\n'.join(race_features)
@@ -1617,6 +1695,14 @@ class MagicItemGenerator(QMainWindow):
             if features_and_traits:
                 features_and_traits += '\n\n'
             features_and_traits += f"Background Features ({background}):\n" + '\n\n'.join(bg_features)
+
+        # Explicitly append extracted proficiency/language lines to features_and_traits
+        if 'extracted_lines_for_prof_lang' in locals() and isinstance(extracted_lines_for_prof_lang, list) and extracted_lines_for_prof_lang:
+            if features_and_traits:
+                features_and_traits += '\n\n' # Add a separator
+            # Clean each line before joining, similar to ProficienciesLang handling
+            cleaned_extracted_lines = [str(line).strip() for line in extracted_lines_for_prof_lang]
+
         attacks_spellcasting = ''
         if race_attacks:
             attacks_spellcasting += f"Race Attacks ({race}):\n" + '\n\n'.join(race_attacks)
@@ -1639,7 +1725,7 @@ class MagicItemGenerator(QMainWindow):
         background_skills = []
         for row in self.background_data:
             if row['name'].strip() == background:
-                skills_field = row.get('Skills', '')
+                skills_field = row.get('skills', '') # Corrected to lowercase 'skills'
                 if skills_field:
                     # Split on semicolon or comma, strip whitespace, ignore empty
                     import re
@@ -1755,6 +1841,30 @@ class MagicItemGenerator(QMainWindow):
             # Currency (placeholders)
             'CP': '', 'SP': '', 'EP': '', 'GP': '', 'PP': '',
         }
+
+        # CORRECTED LOGIC for ProficienciesLang content and line breaks:
+        # The existing race_languages is the base.
+        # Then, append lines extracted from features, ensuring proper newlines.
+        
+        # Start with race_languages, ensuring it's a string.
+        # Replace literal '\\n' from CSV/input with actual newlines if necessary, though pdfrw usually handles '\n'.
+        current_prof_lang_text = str(race_languages).replace('\\\\n', '\\n')
+
+        if 'extracted_lines_for_prof_lang' in locals() and isinstance(extracted_lines_for_prof_lang, list) and extracted_lines_for_prof_lang:
+            # Join the extracted lines with a single newline character
+            additional_text = '\n'.join(extracted_lines_for_prof_lang)
+            
+            # Append additional_text to current_prof_lang_text
+            if current_prof_lang_text and additional_text: # Both have content
+                current_prof_lang_text += '\n' + additional_text
+            elif additional_text: # Only additional_text has content
+                current_prof_lang_text = additional_text
+            # If only current_prof_lang_text has content, it's already set.
+            # If both are empty, it remains empty.
+
+        pdf_data['ProficienciesLang'] = current_prof_lang_text
+        # END CORRECTED LOGIC
+
         # Add correct skill proficiency checkboxes (Check Box 23-40)
         skill_checkbox_order = [
             'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception', 'History',
@@ -1882,233 +1992,7 @@ class MagicItemGenerator(QMainWindow):
 
     def get_selected_race_skills(self):
         # Return the list of selected skills for the race
-        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]    
-
-    def export_character_to_pdf(self):
-        try:
-            from pdfrw import PdfReader, PdfWriter
-        except ImportError:
-            QMessageBox.critical(self, 'Error', 'pdfrw is not installed. Please run: pip install pdfrw')
-            return
-        # Gather data from UI
-        char_name = self.char_name_edit.text().strip() or 'Unnamed'
-        alignment = self.alignment_combo.currentText()
-        player_name = self.player_name_edit.text().strip()
-        class_name = self.class_combo.currentText()
-        level = self.level_spin.value()
-        background = self.bg_combo.currentText()
-        race = self.race_combo.currentText()
-        # Example stat extraction
-        stats = {stat: self.stat_spinboxes[i].value() for i, stat in enumerate(['STR','DEX','CON','WIS','INT','CHA'])}
-        # Calculate modifiers
-        def ability_mod(score):
-            # D&D 5e: (score - 10) // 2
-            return (score - 10) // 2
-        mods = {stat: ability_mod(val) for stat, val in stats.items()}
-        # Gather features for Features and Traits and AttacksSpellcasting
-        attack_keywords = ['attack', 'strike', 'weapon', 'melee', 'ranged', 'shoot', 'hit']
-        def is_attack_feature(text):
-            t = text.lower()
-            return any(word in t for word in attack_keywords)
-        race_features = []
-        race_attacks = []
-        for row in self.race_data:
-            if row['name'].strip() == race:
-                for key, val in row.items():
-                    if key and val and key.strip().lower() == 'features':
-                        features = str(val).replace('\\n', '\n').replace('\r\n', '\n').replace('\r', '\n').strip()
-                        for f in [f.strip() for f in features.split('\n') if f.strip()]:
-                            if is_attack_feature(f):
-                                race_attacks.append(f)
-                            else:
-                                race_features.append(f)
-                        break
-        bg_features = []
-        bg_attacks = []
-        for row in self.background_data:
-            if row['name'].strip() == background:
-                for key, val in row.items():
-                    if key and val and key.strip().lower() == 'features':
-                        features = str(val).replace('\\n', '\n').replace('\r\n', '\n').replace('\r', '\n').strip()
-                        for f in [f.strip() for f in features.split('\n') if f.strip()]:
-                            if is_attack_feature(f):
-                                bg_attacks.append(f)
-                            else:
-                                bg_features.append(f)
-                        break
-        features_and_traits = ''
-        if race_features:
-            features_and_traits += f"Race Features ({race}):\n" + '\n\n'.join(race_features)
-        if bg_features:
-            if features_and_traits:
-                features_and_traits += '\n\n'
-            features_and_traits += f"Background Features ({background}):\n" + '\n\n'.join(bg_features)
-        attacks_spellcasting = ''
-        if race_attacks:
-            attacks_spellcasting += f"Race Attacks ({race}):\n" + '\n\n'.join(race_attacks)
-        if bg_attacks:
-            if attacks_spellcasting:
-                attacks_spellcasting += '\n\n'
-            attacks_spellcasting += f"Background Attacks ({background}):\n" + '\n\n'.join(bg_attacks)
-        # Map to PDF field names (expand coverage)
-        # Gather languages from race
-        race_languages = ''
-        for row in self.race_data:
-            if row['name'].strip() == race:
-                for key, val in row.items():
-                    if key and val and key.strip().lower() == 'languages':
-                        race_languages = val
-                        break        # Get selected race skill proficiencies
-        selected_race_skills = self.get_selected_race_skills()
-
-        # Get background skill proficiencies
-        background_skills = []
-        for row in self.background_data:
-            if row['name'].strip() == background:
-                skills_field = row.get('Skills', '')
-                if skills_field:
-                    # Split on semicolon or comma, strip whitespace, ignore empty
-                    import re
-                    background_skills = [s.strip() for s in re.split(r'[;,]', skills_field) if s.strip()]
-                break
-        # Merge all proficiencies (race + background, no duplicates)
-        all_proficiencies = set(selected_race_skills)
-        all_proficiencies.update(background_skills)
-
-        # Calculate proficiency bonus based on character level (placeholder - using level 1)
-        proficiency_bonus = 2  # Level 1-4 = +2, could be calculated based on actual level
-
-        # Skill to ability mapping
-        skill_ability_map = {
-            'Acrobatics': 'DEX',
-            'Animal Handling': 'WIS', 
-            'Arcana': 'INT',
-            'Athletics': 'STR',
-            'Deception': 'CHA',
-            'History': 'INT',
-            'Insight': 'WIS',
-            'Intimidation': 'CHA',
-            'Investigation': 'INT',
-            'Medicine': 'WIS',
-            'Nature': 'INT',
-            'Perception': 'WIS',
-            'Performance': 'CHA',
-            'Persuasion': 'CHA',
-            'Religion': 'INT',
-            'Sleight of Hand': 'DEX',
-            'Stealth': 'DEX',
-            'Survival': 'WIS'
-        }
-        
-        # Build skill data with proficiency
-        skill_data = {}
-        skill_checkboxes = {}
-        for skill, ability in skill_ability_map.items():
-            base_mod = mods[ability]
-            is_proficient = skill in all_proficiencies
-            if is_proficient:
-                skill_modifier = base_mod + proficiency_bonus
-                skill_checkboxes[skill] = True
-            else:
-                skill_modifier = base_mod
-                skill_checkboxes[skill] = False
-            skill_data[skill] = f"{skill_modifier:+d}"
-
-        pdf_data = {
-            'CharacterName': char_name,
-            'ClassLevel': f'{class_name} {level}',
-            'Background': background,
-            'PlayerName': player_name,
-            'Race': race,
-            'Alignment': alignment,
-            'STRmod': str(stats['STR']),
-            'DEXmod ': str(stats['DEX']),
-            'CONmod': str(stats['CON']),
-            'INTmod': str(stats['INT']),
-            'WISmod': str(stats['WIS']),
-            'CHamod': str(stats['CHA']),
-            'STR': f"{mods['STR']:+d}",
-            'DEX': f"{mods['DEX']:+d}",
-            'CON': f"{mods['CON']:+d}",
-            'INT': f"{mods['INT']:+d}",
-            'WIS': f"{mods['WIS']:+d}",
-            'CHA': f"{mods['CHA']:+d}",
-            # Saving throws (use stat mod for now)
-            'ST Strength': f"{mods['STR']:+d}",
-            'ST Dexterity': f"{mods['DEX']:+d}",
-            'ST Constitution': f"{mods['CON']:+d}",
-            'ST Intelligence': f"{mods['INT']:+d}",
-            'ST Wisdom': f"{mods['WIS']:+d}",
-            'ST Charisma': f"{mods['CHA']:+d}",
-            # Skills with proficiency calculations
-            'Acrobatics': skill_data['Acrobatics'],
-            'Animal': skill_data['Animal Handling'],
-            'Arcana': skill_data['Arcana'],
-            'Athletics': skill_data['Athletics'],
-            'Deception ': skill_data['Deception'],
-            'History ': skill_data['History'],
-            'Insight': skill_data['Insight'],
-            'Intimidation': skill_data['Intimidation'],
-            'Investigation ': skill_data['Investigation'],
-            'Medicine': skill_data['Medicine'],
-            'Nature': skill_data['Nature'],
-            'Perception ': skill_data['Perception'],
-            'Performance': skill_data['Performance'],
-            'Persuasion': skill_data['Persuasion'],
-            'Religion': skill_data['Religion'],
-            'SleightofHand': skill_data['Sleight of Hand'],
-            'Stealth ': skill_data['Stealth'],
-            'Survival': skill_data['Survival'],
-            # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
-            'PersonalityTraits': '',
-            'Ideals': '',
-            'Bonds': '',
-            'Flaws': '',
-            # Equipment and features (placeholders, could add UI fields)
-            'Equipment': '',
-            'Features and Traits': features_and_traits,
-            'AttacksSpellcasting': attacks_spellcasting,
-            'ProficienciesLang': race_languages,
-            # Passive Perception (WIS mod + 10)
-            'Passive': str(10 + mods['WIS']),
-            # AC, Initiative, Speed, HP, etc. (placeholders)
-            'AC': '',
-            'Initiative': f"{mods['DEX']:+d}",
-            'Speed': '',
-            'HPMax': '',
-            'HPCurrent': '',
-            'HPTemp': '',
-            # Currency (placeholders)
-            'CP': '', 'SP': '', 'EP': '', 'GP': '', 'PP': '',
-        }
-        # Add correct skill proficiency checkboxes (Check Box 23-40)
-        skill_checkbox_order = [
-            'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception', 'History',
-            'Insight', 'Intimidation', 'Investigation', 'Medicine', 'Nature', 'Perception',
-            'Performance', 'Persuasion', 'Religion', 'Sleight of Hand', 'Stealth', 'Survival'
-        ]
-        for i, skill in enumerate(skill_checkbox_order, start=23):
-            pdf_data[f'Check Box {i}'] = 'Yes' if skill_checkboxes.get(skill, False) else 'Off'
-        # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
-        # Equipment and features (placeholders, could add UI fields)
-        # Currency (placeholders)
-        template_path = 'character_sheet_template.pdf'
-        output_path = f"{char_name.replace(' ', '_')}.pdf"
-        try:
-            pdf = PdfReader(template_path)
-            for page in pdf.pages:
-                annotations = page.Annots
-                if annotations:
-                    for annotation in annotations:
-                        if annotation.Subtype == '/Widget' and annotation.T:
-                            key = annotation.T[1:-1]  # Remove parentheses
-                            if key in pdf_data:
-                                annotation.V = str(pdf_data[key])
-                                annotation.AP = ''
-            PdfWriter().write(output_path, pdf)
-            QMessageBox.information(self, 'PDF Exported', f'Character sheet saved as {output_path}')
-        except Exception as e:
-            QMessageBox.critical(self, 'Error', f'Failed to export PDF: {e}')
+        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]  
 
 def gui_main():
     app = QApplication(sys.argv)
@@ -2118,3 +2002,4 @@ def gui_main():
 
 if __name__ == '__main__':
     gui_main()
+
