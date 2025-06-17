@@ -1845,7 +1845,8 @@ class MagicItemGenerator(QMainWindow):
         # Add class skill proficiencies to skill checkboxes
         selected_class_skills = self.get_selected_class_skills() if hasattr(self, 'get_selected_class_skills') else []
         for skill in selected_class_skills:
-            if skill in skill_checkboxes:                skill_checkboxes[skill] = False
+            if skill in skill_checkboxes:
+                skill_checkboxes[skill] = True
             skill_data[skill] = f"{skill_modifier:+d}"
 
         # Handle equipment start vs gold start choice
@@ -1973,8 +1974,63 @@ class MagicItemGenerator(QMainWindow):
             elif additional_text: # Only additional_text has content
                 current_prof_lang_text = additional_text
             # If only current_prof_lang_text has content, it's already set.
-            # If both are empty, it remains empty.
-
+            # If both are empty, it remains empty.        # Add class proficiencies (armor, weapons, tools) to ProficienciesLang
+        class_proficiencies = []
+        for entry in self.class_data:
+            if entry.get('name', '').strip() == class_name:
+                proficiencies = entry.get('proficiencies', {})
+                  # Add armor proficiencies with "armor" suffix (except shields)
+                armor_profs = proficiencies.get('armor', [])
+                for armor in armor_profs:
+                    if armor.strip():
+                        if armor.lower() == 'shields':
+                            class_proficiencies.append(armor.capitalize())
+                        else:
+                            class_proficiencies.append(f"{armor.capitalize()} armor")
+                
+                # Add weapon proficiencies with "weapons" suffix
+                weapon_profs = proficiencies.get('weapons', [])
+                for weapon in weapon_profs:
+                    if weapon.strip():
+                        if weapon.lower() == 'firearms':
+                            class_proficiencies.append(weapon.capitalize())
+                        else:
+                            class_proficiencies.append(f"{weapon.capitalize()} weapons")
+                  # Add tool proficiencies (handle artisanchoice and artisaninstrumentchoice)
+                tool_profs = proficiencies.get('tools', [])
+                for tool in tool_profs:
+                    if tool.strip():
+                        if tool.lower() == 'artisanchoice':
+                            # Prompt user to choose an artisan's tool
+                            selected_artisan_tool = self.prompt_artisan_tool_choice()
+                            if selected_artisan_tool:
+                                class_proficiencies.append(selected_artisan_tool)
+                            else:
+                                # User cancelled, show warning and use placeholder
+                                QMessageBox.warning(self, 'Warning', 
+                                    'No artisan tool selected. Using "Artisan\'s Tools" as placeholder.')
+                                class_proficiencies.append("Artisan's Tools")
+                        elif tool.lower() == 'artisaninstrumentchoice':
+                            # Prompt user to choose between artisan's tools or musical instrument
+                            selected_tool_or_instrument = self.prompt_artisan_or_instrument_choice()
+                            if selected_tool_or_instrument:
+                                class_proficiencies.append(selected_tool_or_instrument)
+                            else:
+                                # User cancelled, show warning and use placeholder
+                                QMessageBox.warning(self, 'Warning', 
+                                    'No tool/instrument selected. Using "Artisan\'s Tools or Musical Instrument" as placeholder.')
+                                class_proficiencies.append("Artisan's Tools or Musical Instrument")
+                        else:
+                            class_proficiencies.append(tool.capitalize())
+                break
+        
+        # Add class proficiencies to current_prof_lang_text
+        if class_proficiencies:
+            class_prof_text = '\n'.join(class_proficiencies)
+            if current_prof_lang_text:
+                current_prof_lang_text += '\n' + class_prof_text
+            else:
+                current_prof_lang_text = class_prof_text
         pdf_data['ProficienciesLang'] = current_prof_lang_text
         # END CORRECTED LOGIC
 
@@ -2144,7 +2200,156 @@ class MagicItemGenerator(QMainWindow):
 
     def get_selected_race_skills(self):
         # Return the list of selected skills for the race
-        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]  
+        return [item.text() for item in self.skills_list.selectedItems() if not item.isHidden()]
+
+    def prompt_artisan_tool_choice(self):
+        """Prompt user to choose an artisan's tool from available options"""
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox
+        
+        artisan_tools = [
+            "Alchemist's Supplies",
+            "Brewer's Supplies", 
+            "Calligrapher's Supplies",
+            "Carpenter's Tools",
+            "Cartographer's Tools",
+            "Cobbler's Tools",
+            "Cook's Utensils",
+            "Glassblower's Tools",
+            "Jeweler's Tools",
+            "Leatherworker's Tools",
+            "Mason's Tools",
+            "Painter's Supplies",
+            "Potter's Tools",
+            "Smith's Tools",
+            "Tinker's Tools",
+            "Weaver's Tools",
+            "Woodcarver's Tools"
+        ]
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Choose Artisan's Tool")
+        dialog.setModal(True)
+        
+        layout = QVBoxLayout()
+        
+        label = QLabel("Your class grants proficiency with one artisan's tool of your choice.\nPlease select an artisan's tool:")
+        layout.addWidget(label)
+        
+        combo = QComboBox()
+        combo.addItems(artisan_tools)
+        layout.addWidget(combo)
+        
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("OK")
+        cancel_button = QPushButton("Cancel")
+        
+        def on_ok():
+            dialog.accept()
+        
+        def on_cancel():
+            dialog.reject()
+            
+        ok_button.clicked.connect(on_ok)
+        cancel_button.clicked.connect(on_cancel)
+        
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        if dialog.exec() == QDialog.Accepted:
+            return combo.currentText()
+        else:
+            return None
+
+    def prompt_artisan_or_instrument_choice(self):
+        """Prompt user to choose between an artisan's tool or musical instrument"""
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Choose Tool or Instrument")
+        dialog.setModal(True)
+        
+        layout = QVBoxLayout()
+        
+        label = QLabel("Your class grants proficiency with one artisan's tool or musical instrument of your choice.\nPlease select a tool type:")
+        layout.addWidget(label)
+        
+        type_combo = QComboBox()
+        type_combo.addItems(["Artisan's Tool", "Musical Instrument"])
+        layout.addWidget(type_combo)
+        
+        # Tool/instrument selection combo (initially hidden)
+        selection_combo = QComboBox()
+        layout.addWidget(selection_combo)
+        
+        artisan_tools = [
+            "Alchemist's Supplies",
+            "Brewer's Supplies", 
+            "Calligrapher's Supplies",
+            "Carpenter's Tools",
+            "Cartographer's Tools",
+            "Cobbler's Tools",
+            "Cook's Utensils",
+            "Glassblower's Tools",
+            "Jeweler's Tools",
+            "Leatherworker's Tools",
+            "Mason's Tools",
+            "Painter's Supplies",
+            "Potter's Tools",
+            "Smith's Tools",
+            "Tinker's Tools",
+            "Weaver's Tools",
+            "Woodcarver's Tools"
+        ]
+        
+        musical_instruments = [
+            "Bagpipes",
+            "Drum",
+            "Dulcimer",
+            "Flute",
+            "Lute",
+            "Lyre",
+            "Horn",
+            "Pan Flute",
+            "Shawm",
+            "Viol"
+        ]
+        
+        def update_selection_options():
+            selection_combo.clear()
+            if type_combo.currentText() == "Artisan's Tool":
+                selection_combo.addItems(artisan_tools)
+            else:
+                selection_combo.addItems(musical_instruments)
+        
+        type_combo.currentTextChanged.connect(update_selection_options)
+        update_selection_options()  # Initialize
+        
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("OK")
+        cancel_button = QPushButton("Cancel")
+        
+        def on_ok():
+            dialog.accept()
+        
+        def on_cancel():
+            dialog.reject()
+            
+        ok_button.clicked.connect(on_ok)
+        cancel_button.clicked.connect(on_cancel)
+        
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        if dialog.exec() == QDialog.Accepted:
+            return selection_combo.currentText()
+        else:
+            return None
 
 def gui_main():
     app = QApplication(sys.argv)
@@ -2154,4 +2359,3 @@ def gui_main():
 
 if __name__ == '__main__':
     gui_main()
-

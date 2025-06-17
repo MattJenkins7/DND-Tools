@@ -657,7 +657,7 @@
       "caster_type": "none",
       "proficiencies": {
         "armor": [],
-        "weapons": ["simple", "light, martial"],
+        "weapons": ["simple", "light martial"],
         "tools": ["artisaninstrumentchoice"],
         "skills": ["2", "Athletics", "Acrobatics", "History", "Insight", "Stealth", "Religion"]
       },
