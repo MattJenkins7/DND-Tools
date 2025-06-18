@@ -1401,7 +1401,7 @@
         "starting_equipment": {
           "armor": ["Leather Armor"],
           "weapons": ["simple", "simple", "Light Crossbow"],
-          "gold": 0,
+          "gold": 6,
           "gear": ["Thieves' Tools", "Dungeoneer's pack"]
         },
         "gold_start": 100,

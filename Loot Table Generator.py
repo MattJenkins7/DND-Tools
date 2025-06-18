@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QLineEdit, QComboBox, QTableWidget, QTableWidgetItem, QTextEdit,
     QFileDialog, QMessageBox, QSpinBox, QDoubleSpinBox, QStatusBar, QAbstractItemView, QHeaderView,
-    QScrollArea, QToolButton, QSizePolicy, QFrame, QListWidget, QCheckBox
+    QScrollArea, QToolButton, QSizePolicy, QFrame, QListWidget, QCheckBox, QDialog
 )
 from PySide6.QtCore import Qt, QEvent, QTimer
 from PySide6.QtGui import QKeySequence
@@ -787,6 +787,12 @@ class MagicItemGenerator(QMainWindow):
         char_layout = QVBoxLayout()
         char_tab.setLayout(char_layout)
 
+        # Initialize required attributes
+        self.required_race_skills = 0
+        self.allowed_race_skills = []
+        self.required_class_skills = 0
+        self.allowed_class_skills = []
+
         # --- Race Dropdown ---
         race_bar = QHBoxLayout()
         race_label = QLabel('Race:')
@@ -1017,9 +1023,7 @@ class MagicItemGenerator(QMainWindow):
         char_layout.addLayout(asi_radio_bar)
         char_layout.addLayout(stat_grid)
         char_layout.addLayout(stat_controls_bar)
-        char_layout.addLayout(param_bar)
-
-        # --- Character Info Inputs (Name, Alignment, Player Name) ---
+        char_layout.addLayout(param_bar)        # --- Character Info Inputs (Name, Alignment, Player Name) ---
         info_bar = QHBoxLayout()
         info_bar.addWidget(QLabel('Character Name:'))
         self.char_name_edit = QLineEdit()
@@ -1037,32 +1041,23 @@ class MagicItemGenerator(QMainWindow):
         info_bar.addWidget(self.player_name_edit)
         info_bar.addStretch()
         char_layout.insertLayout(0, info_bar)
-
+        
         # Connect stat spinboxes to update totals (no prompt)
         for spin in self.stat_spinboxes:
             spin.valueChanged.connect(self.update_stat_totals)
         # Connect ASI radio group to prompt+update
         self.asi_group.buttonClicked.disconnect()
-        self.asi_group.buttonClicked.connect(self.on_asi_source_changed)
-
-        # --- Wrap the whole tab in a scroll area ---
-        outer_scroll = QScrollArea()
-        outer_scroll.setWidgetResizable(True)
-        container = QWidget()
-        container.setLayout(char_layout)
-        outer_scroll.setWidget(container)
-        self.tabs.addTab(outer_scroll, 'Character Creator')
-
-        # --- Skills Generation Section ---
+        self.asi_group.buttonClicked.connect(self.on_asi_source_changed)        # --- Skills Generation Section ---
         skill_gen_bar = QHBoxLayout()
         skill_label = QLabel('Skill Generation:')
         skill_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
-        skill_gen_bar.addWidget(skill_label)        # --- Proficiency Selection Section (with dropdowns for allowed skills) ---
+        skill_gen_bar.addWidget(skill_label)
+        
+        # --- Proficiency Selection Section (with dropdowns for allowed skills) ---
         self.proficiency_widget = QWidget()
         self.proficiency_layout = QVBoxLayout()
         self.proficiency_widget.setLayout(self.proficiency_layout)
-        self.proficiency_dropdowns = []
-        # Place the proficiency_widget directly in the character layout, after skills generation
+        self.proficiency_dropdowns = []  # Initialize the dropdowns list
         char_layout.addWidget(QLabel('Race Skill Proficiencies:'))
         char_layout.addWidget(self.proficiency_widget)
 
@@ -1116,8 +1111,7 @@ class MagicItemGenerator(QMainWindow):
                 current_selection = dropdown.currentText()
                 dropdown.blockSignals(True)
                 dropdown.clear()
-                dropdown.addItem("-- Select Skill --")
-                # Add skills that aren't selected elsewhere, or the current selection
+                dropdown.addItem("-- Select Skill --")                # Add skills that aren't selected elsewhere, or the current selection
                 for skill in self.allowed_race_skills:
                     if skill not in selected_skills or skill == current_selection:
                         dropdown.addItem(skill)
@@ -1132,12 +1126,12 @@ class MagicItemGenerator(QMainWindow):
         self.get_selected_race_skills = get_selected_race_skills
         self.race_combo.currentTextChanged.connect(self.update_proficiency_dropdowns)
         self.update_proficiency_dropdowns(self.race_combo.currentText())
-
+        
         # --- Class Skill Proficiencies Section ---
         self.class_proficiency_widget = QWidget()
         self.class_proficiency_layout = QVBoxLayout()
         self.class_proficiency_widget.setLayout(self.class_proficiency_layout)
-        self.class_proficiency_dropdowns = []
+        self.class_proficiency_dropdowns = []  # Initialize the dropdowns list
         char_layout.addWidget(QLabel('Class Skill Proficiencies:'))
         char_layout.addWidget(self.class_proficiency_widget)
 
@@ -1197,14 +1191,58 @@ class MagicItemGenerator(QMainWindow):
 
         self.update_class_proficiency_dropdowns = update_class_proficiency_dropdowns
         self.get_selected_class_skills = get_selected_class_skills
-        self.class_combo.currentTextChanged.connect(self.update_class_proficiency_dropdowns)
-        # Call after UI is fully constructed
+        self.class_combo.currentTextChanged.connect(self.update_class_proficiency_dropdowns)        # Call after UI is fully constructed
         QTimer.singleShot(0, lambda: self.update_class_proficiency_dropdowns(self.class_combo.currentText()))
-
+        
+        # --- Spell Selection Section ---
+        self.spell_data = []
+        self.selected_spells = {}  # {spell_level: [spell_names]}
+        self.spell_widgets = {}    # {spell_level: [QComboBox widgets]}        # Load spells from spells.csv
+        try:
+            with open('spells.csv', 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                self.spell_data = list(reader)
+        except Exception:
+            self.spell_data = []
+        
+        # Create spell selection widget (initially hidden)
+        self.spell_section_widget = QWidget()
+        spell_section_layout = QVBoxLayout(self.spell_section_widget)
+        
+        spell_label = QLabel('Spell Selection:')
+        spell_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
+        spell_section_layout.addWidget(spell_label)
+        
+        self.spell_info_label = QLabel('No spells available for this class/level.')
+        self.spell_info_label.setWordWrap(True)
+        spell_section_layout.addWidget(self.spell_info_label)
+        
+        # Container for spell level sections
+        self.spell_levels_widget = QWidget()
+        self.spell_levels_layout = QVBoxLayout(self.spell_levels_widget)
+        spell_section_layout.addWidget(self.spell_levels_widget)
+        
+        # Make it collapsible
+        spell_collapsible_section = self.make_collapsible_section('Spell Selection', self.spell_section_widget)
+        char_layout.addWidget(spell_collapsible_section)
+          # Connect level changes to update spell selection
+        self.level_spin.valueChanged.connect(self.update_spell_selection)
+        self.class_combo.currentTextChanged.connect(self.update_spell_selection)
+          # Initialize spell selection
+        QTimer.singleShot(500, self.update_spell_selection)  # Increased delay to ensure all data is loaded
+        
         # --- Export to PDF Button (moved to bottom) ---
         export_pdf_btn = QPushButton('Export to PDF')
         export_pdf_btn.clicked.connect(self.export_character_to_pdf)
         char_layout.addWidget(export_pdf_btn)
+
+        # --- Wrap the whole tab in a scroll area ---
+        outer_scroll = QScrollArea()
+        outer_scroll.setWidgetResizable(True)
+        container = QWidget()
+        container.setLayout(char_layout)
+        outer_scroll.setWidget(container)
+        self.tabs.addTab(outer_scroll, 'Character Creator')
 
     def update_stat_totals(self):
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
@@ -1622,8 +1660,7 @@ class MagicItemGenerator(QMainWindow):
         return asi_result    
     
     def export_character_to_pdf(self):
-        import re # Ensure re module is available in this scope
-        # Check that the required number of race skill proficiencies are selected
+        import re # Ensure re module is available in this scope        # Check that the required number of race skill proficiencies are selected
         selected_skills = self.get_selected_race_skills()
         if self.required_race_skills and len(selected_skills) < self.required_race_skills:
             QMessageBox.critical(self, 'Error', f'Please select {self.required_race_skills} skill proficiency(ies) for your race before exporting.')
@@ -1633,18 +1670,89 @@ class MagicItemGenerator(QMainWindow):
             from pdfrw import PdfReader, PdfWriter
         except ImportError:
             QMessageBox.critical(self, 'Error', 'pdfrw is not installed. Please run: pip install pdfrw')
-            return
+            return        
         # Gather data from UI
-        char_name = self.char_name_edit.text().strip() or 'Unnamed'
+        char_name = self.char_name_edit.text().strip()
         alignment = self.alignment_combo.currentText()
         player_name = self.player_name_edit.text().strip()
         class_name = self.class_combo.currentText()
         level = self.level_spin.value()
         background = self.bg_combo.currentText()
         race = self.race_combo.currentText()
-        # Example stat extraction
-        stats = {stat: self.stat_spinboxes[i].value() for i, stat in enumerate(['STR','DEX','CON','WIS','INT','CHA'])}
-        # Calculate modifiers
+        
+        # Set character name for PDF field (use "Unnamed" if no name entered)
+        display_char_name = char_name or 'Unnamed'
+        
+        # Calculate proficiency bonus based on character level
+        proficiency_bonus = 2  # Level 1-4
+        if level >= 5:
+            proficiency_bonus = 3  # Level 5-8
+        if level >= 9:
+            proficiency_bonus = 4  # Level 9-12
+        if level >= 13:
+            proficiency_bonus = 5  # Level 13-16
+        if level >= 17:
+            proficiency_bonus = 6  # Level 17-20
+          # Get racial speed information
+        racial_speed = ''
+        racial_speed_features = ''
+        for row in self.race_data:
+            if row.get('name', '').strip() == race:
+                speed_text = row.get('Speed', '').strip()
+                if speed_text:
+                    # Check if there are additional speed features after a comma
+                    if ',' in speed_text:
+                        parts = speed_text.split(',', 1)
+                        racial_speed = parts[0].strip()
+                        # Extract additional features (everything after the first comma)
+                        if len(parts) > 1 and parts[1].strip():
+                            racial_speed_features = parts[1].strip()
+                    else:
+                        racial_speed = speed_text
+                break
+        
+        # Get class hit die information
+        class_hit_die = ''
+        for entry in self.class_data:
+            if entry.get('name', '').strip() == class_name:
+                hit_die = entry.get('hit_die', '')
+                if hit_die:
+                    class_hit_die = hit_die
+                break
+
+        # Get total ability scores (base + racial/background bonuses)
+        stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
+        base_stats = {stat: self.stat_spinboxes[i].value() for i, stat in enumerate(stat_names)}
+        
+        # Calculate racial and background ASI bonuses
+        race_checked = self.asi_race_radio.isChecked() or self.asi_both_radio.isChecked()
+        background_checked = self.asi_bg_radio.isChecked() or self.asi_both_radio.isChecked()
+        asi = {k: 0 for k in stat_names}
+        
+        if race_checked:
+            race_name = self.race_combo.currentText()
+            for row in self.race_data:
+                if row['name'].strip() == race_name:
+                    asi_str = row.get('Ability Score Increase', '')
+                    asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Race')
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    break
+        
+        if background_checked:
+            bg_name = self.bg_combo.currentText()
+            for row in self.background_data:
+                if row['name'].strip() == bg_name:
+                    asi_str = row.get('ability', '')
+                    asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Background')
+                    for k, v in asi_result.items():
+                        asi[k] += v
+                    break
+        
+        # Calculate total stats (base + ASI bonuses)
+        stats = {stat: base_stats[stat] + asi.get(stat, 0) for stat in stat_names}
+        
+        # Calculate modifiers based on total stats
         def ability_mod(score):
             # D&D 5e: (score - 10) // 2
             return (score - 10) // 2
@@ -1664,6 +1772,7 @@ class MagicItemGenerator(QMainWindow):
                         for f in [f.strip() for f in features.split('\\n') if f.strip()]:
                             if is_attack_feature(f):
                                 race_attacks.append(f)
+                                race_features.append(f)
                             else:
                                 race_features.append(f)
                         break
@@ -1746,23 +1855,46 @@ class MagicItemGenerator(QMainWindow):
                     if keyword in feature_line.lower():
                         extracted_lines_for_prof_lang.append(feature_line)
                         break 
-        
-        # Populate from a copy of bg_features
+          # Populate from a copy of bg_features
         if 'bg_features' in locals() and isinstance(bg_features, list):
             for feature_line in list(bg_features): # Iterate over a copy
                 for keyword in prof_lang_keywords:
                     if keyword in feature_line.lower(): # Check the whole line
                         extracted_lines_for_prof_lang.append(feature_line)
-                        break
-        # END CORRECTED LOGIC
+                        break        # END CORRECTED LOGIC        # Extract class feature names (only names, not descriptions) for character's level
+        class_feature_names = []
+        for entry in self.class_data:
+            if entry.get('name', '').strip() == class_name:
+                features_dict = entry.get('features', {})
+                for level_str in range(1, level + 1):  # Get features from level 1 up to character level
+                    level_features = features_dict.get(str(level_str), [])
+                    if level_features:
+                        for feature in level_features:
+                            feature_name = feature.get('name', '')
+                            if feature_name:
+                                class_feature_names.append(f"Level {level_str} - {feature_name}")
+                break
 
         features_and_traits = ''
+        
+        # Add class feature names first (at the very top)
+        if class_feature_names:
+            features_and_traits += f"Class Features ({class_name}):\n" + '\n'.join(class_feature_names)
+        
         if race_features:
+            if features_and_traits:
+                features_and_traits += '\n\n'
             features_and_traits += f"Race Features ({race}):\n" + '\n\n'.join(race_features)
         if bg_features:
             if features_and_traits:
                 features_and_traits += '\n\n'
             features_and_traits += f"Background Features ({background}):\n" + '\n\n'.join(bg_features)
+        
+        # Add racial speed features if they exist
+        if racial_speed_features:
+            if features_and_traits:
+                features_and_traits += '\n\n'
+            features_and_traits += f"Racial Movement:\n{racial_speed_features}"
 
         # Explicitly append extracted proficiency/language lines to features_and_traits
         if 'extracted_lines_for_prof_lang' in locals() and isinstance(extracted_lines_for_prof_lang, list) and extracted_lines_for_prof_lang:
@@ -1778,6 +1910,37 @@ class MagicItemGenerator(QMainWindow):
             if attacks_spellcasting:
                 attacks_spellcasting += '\n\n'
             attacks_spellcasting += f"Background Attacks ({background}):\n" + '\n\n'.join(bg_attacks)
+        
+        # Add spells to AttacksSpellcasting field
+        selected_spells = self.get_selected_spells()
+        if selected_spells:
+            if attacks_spellcasting:
+                attacks_spellcasting += '\n\n'
+            attacks_spellcasting += f"Spells ({class_name}):\n"
+            
+            for spell_level in sorted(selected_spells.keys(), key=lambda x: int(x.replace('0th', '0').replace('st', '').replace('nd', '').replace('rd', '').replace('th', ''))):
+                spells = selected_spells[spell_level]
+                if spells:
+                    attacks_spellcasting += f"\n{spell_level.title()} Level:\n"
+                    for spell in spells:
+                        # Find spell details from spell data
+                        spell_info = self.get_spell_info(spell)
+                        if spell_info:
+                            casting_time = spell_info.get('Casting Time', '')
+                            duration = spell_info.get('Duration', '')
+                            range_info = spell_info.get('Range', '')
+                            components = spell_info.get('Components', '')
+                            attacks_spellcasting += f"• {spell}"
+                            if casting_time:
+                                attacks_spellcasting += f" ({casting_time}"
+                                if duration and duration != 'Instantaneous':
+                                    attacks_spellcasting += f", {duration}"
+                                if range_info and range_info != 'Self':
+                                    attacks_spellcasting += f", {range_info}"
+                                attacks_spellcasting += ")"
+                            attacks_spellcasting += "\n"
+                        else:
+                            attacks_spellcasting += f"• {spell}\n"
         # Map to PDF field names (expand coverage)
         # Gather languages from race
         race_languages = ''
@@ -1798,13 +1961,9 @@ class MagicItemGenerator(QMainWindow):
                     # Split on semicolon or comma, strip whitespace, ignore empty
                     import re
                     background_skills = [s.strip() for s in re.split(r'[;,]', skills_field) if s.strip()]
-                break
-        # Merge all proficiencies (race + background, no duplicates)
+                break        # Merge all proficiencies (race + background, no duplicates)
         all_proficiencies = set(selected_race_skills)
         all_proficiencies.update(background_skills)
-
-        # Calculate proficiency bonus based on character level (placeholder - using level 1)
-        proficiency_bonus = 2  # Level 1-4 = +2, could be calculated based on actual level
 
         # Skill to ability mapping
         skill_ability_map = {
@@ -1840,9 +1999,7 @@ class MagicItemGenerator(QMainWindow):
             else:
                 skill_modifier = base_mod
                 skill_checkboxes[skill] = False
-            skill_data[skill] = f"{skill_modifier:+d}"
-
-        # Add class skill proficiencies to skill checkboxes
+            skill_data[skill] = f"{skill_modifier:+d}"        # Add class skill proficiencies to skill checkboxes
         selected_class_skills = self.get_selected_class_skills() if hasattr(self, 'get_selected_class_skills') else []
         for skill in selected_class_skills:
             if skill in skill_checkboxes:
@@ -1854,23 +2011,58 @@ class MagicItemGenerator(QMainWindow):
         equipment_list = []
         starting_gold = 0
         
+        def consolidate_equipment(items):
+            """Consolidate duplicate items and format them as 'Item xN'"""
+            from collections import Counter
+            if not items:
+                return []
+            
+            item_counts = Counter(items)
+            consolidated = []
+            for item, count in item_counts.items():
+                if count > 1:
+                    consolidated.append(f"{item} x{count}")
+                else:
+                    consolidated.append(item)
+            return consolidated
+        
+        def process_equipment_items(items):
+            """Process equipment items, handling 'simple' weapon choices"""
+            processed_items = []
+            for item in items:
+                if item.lower() == 'simple':
+                    # Prompt user to choose a simple weapon
+                    selected_weapon = self.prompt_simple_weapon_choice()
+                    if selected_weapon:
+                        processed_items.append(selected_weapon)
+                    else:
+                        # User cancelled, show warning and use placeholder
+                        QMessageBox.warning(self, 'Warning', 
+                            'No simple weapon selected. Using "Simple Weapon" as placeholder.')
+                        processed_items.append("Simple Weapon")
+                else:
+                    processed_items.append(item)
+            return processed_items
+        
         if equipment_choice == 'equipment':
             # Get starting equipment from class data
             for entry in self.class_data:
                 if entry.get('name', '').strip() == class_name:
                     starting_equipment = entry.get('starting_equipment', {})
                     
-                    # Add armor
+                    # Add armor (consolidate duplicates)
                     armor = starting_equipment.get('armor', [])
-                    equipment_list.extend(armor)
+                    processed_armor = process_equipment_items(armor)
+                    equipment_list.extend(consolidate_equipment(processed_armor))
                     
-                    # Add weapons  
+                    # Add weapons (process simple weapons, then consolidate duplicates)
                     weapons = starting_equipment.get('weapons', [])
-                    equipment_list.extend(weapons)
-                    
-                    # Add gear
+                    processed_weapons = process_equipment_items(weapons)
+                    equipment_list.extend(consolidate_equipment(processed_weapons))
+                      # Add gear (process simple items, then consolidate duplicates)
                     gear = starting_equipment.get('gear', [])
-                    equipment_list.extend(gear)
+                    processed_gear = process_equipment_items(gear)
+                    equipment_list.extend(consolidate_equipment(processed_gear))
                     
                     # Add starting gold from equipment
                     starting_gold = starting_equipment.get('gold', 0)
@@ -1881,19 +2073,174 @@ class MagicItemGenerator(QMainWindow):
                 if entry.get('name', '').strip() == class_name:
                     starting_gold = entry.get('gold_start', 0)
                     break
-
+        
         # Add class skill proficiencies to skill checkboxes
         selected_class_skills = self.get_selected_class_skills() if hasattr(self, 'get_selected_class_skills') else []
         for skill in selected_class_skills:
             if skill in skill_checkboxes:
                 skill_checkboxes[skill] = True
 
+        # Process armor for AC calculation and features
+        armor_ac = 10  # Base AC without armor
+        armor_features = []
+        
+        # Load armor data
+        armor_data = {}
+        try:
+            with open('armor.csv', 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    armor_name = row.get('Name', '').strip()
+                    if armor_name:
+                        armor_data[armor_name.lower()] = {
+                            'ac_formula': row.get('Damage', '').strip(),  # AC formula is in Damage column
+                            'text': row.get('Text', '').strip()
+                        }
+        except Exception as e:
+            print(f"Warning: Could not load armor.csv: {e}")
+        
+        # Find armor in equipment list and calculate AC
+        for item in equipment_list:
+            item_lower = item.lower()
+            for armor_name, armor_info in armor_data.items():
+                if armor_name in item_lower:
+                    ac_formula = armor_info['ac_formula']
+                    armor_text = armor_info['text']
+                    
+                    if ac_formula:
+                        # Parse AC formula (e.g., "AC 14 + Dex (max 2)", "AC 18", "AC 11 + Dex")
+                        dex_mod = mods['DEX']
+                        
+                        if 'AC' in ac_formula:
+                            # Extract base AC number
+                            import re
+                            ac_match = re.search(r'AC\s*(\d+)', ac_formula)
+                            if ac_match:
+                                base_ac = int(ac_match.group(1))
+                                
+                                if '+ Dex' in ac_formula:
+                                    # Check for max dex bonus
+                                    max_match = re.search(r'max\s*(\d+)', ac_formula)
+                                    if max_match:
+                                        max_dex = int(max_match.group(1))
+                                        effective_dex_mod = min(dex_mod, max_dex)
+                                    else:
+                                        effective_dex_mod = dex_mod
+                                    if effective_dex_mod > 0:
+                                        armor_ac = base_ac + effective_dex_mod
+                                    else:
+                                        armor_ac = base_ac
+                                else:
+                                    armor_ac = base_ac
+                    
+                    # Add armor text to features if it exists
+                    if armor_text:
+                        armor_features.append(f"{item}: {armor_text}")
+                    
+                    break  # Found matching armor, stop searching
+          # Add armor information to Features and Traits
+        if armor_features:
+            if features_and_traits:
+                features_and_traits += "\n\nArmor Information:\n"
+            else:
+                features_and_traits = "Armor Information:\n"
+            features_and_traits += "\n".join(armor_features)
+
+        # Prompt for HP calculation method
+        hp_max = 0
+        hp_current = 0
+        
+        # Get hit die for calculations        hit_die_num = 8  # Default d8
+        if class_hit_die:
+            import re
+            hit_die_match = re.search(r'd(\d+)', class_hit_die)
+            if hit_die_match:
+                hit_die_num = int(hit_die_match.group(1))
+        
+        from PySide6.QtWidgets import QMessageBox, QInputDialog
+        msg = QMessageBox(self)
+        msg.setWindowTitle('HP Calculation')
+        msg.setText('How would you like to calculate hit points?')
+        manual_btn = msg.addButton('Manual Entry', QMessageBox.ActionRole)
+        average_btn = msg.addButton('Average HP', QMessageBox.ActionRole)
+        roll_btn = msg.addButton('Roll for HP', QMessageBox.ActionRole)
+        msg.exec()
+        
+        if msg.clickedButton() == manual_btn:
+            # Manual HP entry
+            hp_max, ok = QInputDialog.getInt(self, 'Manual HP Entry', 'Enter maximum hit points:', 
+                                           8 + mods['CON'])
+            if ok and hp_max >= 1:  # Validate minimum value
+                hp_current = hp_max
+            else:
+                hp_max = 8 + mods['CON']  # Default fallback
+                hp_current = hp_max
+                
+        elif msg.clickedButton() == average_btn:
+            # Calculate average HP: max at 1st level + average of hit die for remaining levels
+            first_level_hp = hit_die_num + mods['CON']
+            if level > 1:
+                average_per_level = (hit_die_num // 2) + 1 + mods['CON']
+                additional_hp = (level - 1) * average_per_level
+                hp_max = first_level_hp + additional_hp
+            else:
+                hp_max = first_level_hp
+            hp_current = hp_max
+            
+        else:  # roll_btn or default
+            # Roll for HP: max at 1st level + roll for each additional level
+            import random
+            first_level_hp = hit_die_num + mods['CON']
+            hp_max = first_level_hp
+            
+            if level > 1:
+                rolled_hp = []
+                for i in range(level - 1):
+                    roll = random.randint(1, hit_die_num)
+                    rolled_hp.append(roll)
+                    hp_max += roll + mods['CON']
+                
+                # Show the user what was rolled
+                rolls_text = ', '.join(map(str, rolled_hp))
+                QMessageBox.information(self, 'HP Rolls', 
+                    f'Rolled {rolls_text} for levels 2-{level}\n'
+                    f'Total HP: {hp_max} (includes CON modifier)')
+            
+            hp_current = hp_max        # Add spell slots and cantrips information
+        spell_slots_info = ''
+        caster_type = self.get_caster_type(class_name)
+        if caster_type:
+            spell_slots = self.get_spell_slots(caster_type, level)
+            if spell_slots:
+                # Handle different caster types
+                if caster_type == 'pact_caster':  # Warlock
+                    slots = spell_slots.get('slots', 0)
+                    slot_level = spell_slots.get('slot_level', '1st')
+                    if slots > 0:
+                        spell_slots_info = f'Spell Slots: {slots} {slot_level} level'
+                else:
+                    # Format spell slots for regular casters
+                    slot_parts = []
+                    for slot_level, count in spell_slots.items():
+                        if slot_level not in ['slots', 'slot_level']:
+                            slot_parts.append(f"{slot_level}: {count}")
+                    if slot_parts:
+                        spell_slots_info = 'Spell Slots: ' + ', '.join(slot_parts)
+                
+                # Add cantrips known
+                cantrips_known = self.get_cantrips_known(class_name, level)
+                if cantrips_known > 0:
+                    if spell_slots_info:
+                        spell_slots_info += f'\nCantrips Known: {cantrips_known}'
+                    else:
+                        spell_slots_info = f'Cantrips Known: {cantrips_known}'
+
         pdf_data = {
-            'CharacterName': char_name,
+            'CharacterName': display_char_name,
             'ClassLevel': f'{class_name} {level}',
             'Background': background,
             'PlayerName': player_name,
-            'Race': race,
+            'Race ': race,
             'Alignment': alignment,
             'STRmod': str(stats['STR']),
             'DEXmod ': str(stats['DEX']),
@@ -1939,19 +2286,20 @@ class MagicItemGenerator(QMainWindow):
             'Bonds': '',
             'Flaws': '',
             # Equipment and features (placeholders, could add UI fields)
-            'Equipment': '\n'.join(equipment_list),
-            'Features and Traits': features_and_traits,
+            'Equipment': '\n'.join(equipment_list),            'Features and Traits': features_and_traits,
             'AttacksSpellcasting': attacks_spellcasting,
             'ProficienciesLang': race_languages,
-            # Passive Perception (WIS mod + 10)
-            'Passive': str(10 + mods['WIS']),
-            # AC, Initiative, Speed, HP, etc. (placeholders)
-            'AC': '',
+            'SpellSlots': spell_slots_info,# Passive Perception (WIS mod + 10)
+            'Passive': str(10 + mods['WIS']),            # AC, Initiative, Speed, HP, etc.
+            'AC': str(armor_ac),
             'Initiative': f"{mods['DEX']:+d}",
-            'Speed': '',
-            'HPMax': '',
-            'HPCurrent': '',
-            'HPTemp': '',
+            'Speed': racial_speed,
+            'HPMax': str(hp_max),
+            'HPCurrent': str(hp_current),
+            'HPTemp': '',# Proficiency bonus and hit die
+            'ProfBonus': f"+{proficiency_bonus}",
+            'HD': class_hit_die,
+            'HDTotal': f"{level}{class_hit_die}" if class_hit_die else f"{level}d8",
             # Currency (placeholders)
             'CP': '', 'SP': '', 'EP': '', 'GP': str(starting_gold), 'PP': '',
         }
@@ -2066,11 +2414,115 @@ class MagicItemGenerator(QMainWindow):
         ]
         for i, skill in enumerate(skill_checkbox_order, start=23):
             pdf_data[f'Check Box {i}'] = 'Yes' if skill_checkboxes.get(skill, False) else 'Off'
-        # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
+          # Cross-reference equipment with weapons_no_desc.csv and fill weapon boxes
+        weapon_data = {}
+        try:
+            with open('weapons_no_desc.csv', 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    weapon_name = row['Name'].strip()
+                    weapon_data[weapon_name.lower()] = {
+                        'name': weapon_name,
+                        'type': row.get('Type', ''),
+                        'damage': row.get('Damage', ''),
+                        'properties': row.get('Properties', '')
+                    }
+        except Exception as e:
+            print(f"Error loading weapons_no_desc.csv: {e}")        # Get class weapon proficiencies for proficiency check
+        class_weapon_profs = set()
+        for entry in self.class_data:
+            if entry.get('name', '').strip() == class_name:
+                proficiencies = entry.get('proficiencies', {})
+                weapon_profs = proficiencies.get('weapons', [])
+                for weapon_type in weapon_profs:
+                    class_weapon_profs.add(weapon_type.lower().strip())
+                break
+
+        # Find weapons in consolidated equipment
+        filled_weapons = []
+        for item in equipment_list:
+            # Remove quantity indicator (e.g., "Javelin x6" -> "Javelin")
+            clean_item = item.split(' x')[0].strip()
+            weapon_key = clean_item.lower()
+            
+            if weapon_key in weapon_data:
+                weapon = weapon_data[weapon_key]
+                properties = weapon.get('properties', '').lower()
+                weapon_type = weapon.get('type', '').lower()
+                damage = weapon.get('damage', '')
+                
+                # Determine if character is proficient with this weapon
+                is_proficient = False
+                if 'simple weapon' in weapon_type and 'simple' in class_weapon_profs:
+                    is_proficient = True
+                elif 'martial weapon' in weapon_type and 'martial' in class_weapon_profs:
+                    is_proficient = True
+                
+                # Determine which ability modifier to use based on weapon type
+                if 'ranged weapon' in weapon_type:
+                    # Ranged weapons use DEX
+                    ability_mod = mods['DEX']
+                elif 'finesse' in properties:
+                    # Finesse weapons use the higher of STR or DEX
+                    ability_mod = max(mods['STR'], mods['DEX'])
+                else:
+                    # Default to STR for melee weapons
+                    ability_mod = mods['STR']
+                
+                # Calculate attack bonus (proficiency + ability modifier)
+                attack_bonus = ability_mod + (proficiency_bonus if is_proficient else 0)
+                attack_bonus_str = f"{attack_bonus:+d}"
+                
+                # Calculate damage (dice + ability modifier)
+                import re
+                if damage:
+                    damage_match = re.match(r'(\d+d\d+)', damage)
+                    if damage_match:
+                        damage_dice = damage_match.group(1)
+                        damage_type = damage.replace(damage_dice, '').strip()
+                        if ability_mod != 0:
+                            damage_str = f"{damage_dice}{ability_mod:+d} {damage_type}"
+                        else:
+                            damage_str = f"{damage_dice} {damage_type}"
+                    else:
+                        damage_str = damage
+                else:
+                    damage_str = ""
+                
+                filled_weapons.append({
+                    'name': clean_item,
+                    'attack_bonus': attack_bonus_str,
+                    'damage': damage_str
+                })
+                
+                # Only fill up to 3 weapons
+                if len(filled_weapons) >= 3:
+                    break
+
+        # Fill PDF fields for up to 3 weapons
+        for i, weapon in enumerate(filled_weapons):
+            if i == 0:
+                pdf_data['Wpn Name'] = weapon['name']
+                pdf_data['Wpn1 AtkBonus'] = weapon['attack_bonus']
+                pdf_data['Wpn1 Damage'] = weapon['damage']
+            else:
+                pdf_data[f'Wpn Name {i+1}'] = weapon['name']
+                if i == 1:
+                    pdf_data[f'Wpn{i+1} AtkBonus '] = weapon['attack_bonus']
+                else:
+                    pdf_data[f'Wpn{i+1} AtkBonus  '] = weapon['attack_bonus']
+                pdf_data[f'Wpn{i+1} Damage '] = weapon['damage']
+          # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
         # Equipment and features (placeholders, could add UI fields)
         # Currency (placeholders)
         template_path = 'character_sheet_template.pdf'
-        output_path = f"{char_name.replace(' ', '_')}.pdf"
+        
+        # Determine output filename
+        if char_name:
+            output_path = f"{char_name.replace(' ', '_')}.pdf"
+        else:
+            output_path = f"{race}_{class_name}.pdf".replace(' ', '_')
+        
         try:
             pdf = PdfReader(template_path)
             for page in pdf.pages:
@@ -2101,6 +2553,59 @@ class MagicItemGenerator(QMainWindow):
             return 'equipment'
         else:
             return 'gold'
+
+    def prompt_simple_weapon_choice(self):
+        """Prompt user to choose a simple weapon from available options"""
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox
+        
+        simple_weapons = [
+            "Club",
+            "Dagger", 
+            "Greatclub",
+            "Handaxe",
+            "Javelin",
+            "Light hammer",
+            "Mace",
+            "Quarterstaff",
+            "Spear"
+        ]
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Choose Simple Weapon")
+        dialog.setModal(True)
+        
+        layout = QVBoxLayout()
+        
+        label = QLabel("Your starting equipment includes a simple weapon.\nPlease select a simple weapon:")
+        layout.addWidget(label)
+        
+        combo = QComboBox()
+        combo.addItems(simple_weapons)
+        layout.addWidget(combo)
+        
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("OK")
+        cancel_button = QPushButton("Cancel")
+        
+        def on_ok():
+            dialog.accept()
+        
+        def on_cancel():
+            dialog.reject()
+            
+        ok_button.clicked.connect(on_ok)
+        cancel_button.clicked.connect(on_cancel)
+        
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        if dialog.exec() == QDialog.Accepted:
+            return combo.currentText()
+        else:
+            return None
 
     def on_race_changed(self):
         race_name = self.race_combo.currentText()
@@ -2338,8 +2843,7 @@ class MagicItemGenerator(QMainWindow):
             dialog.reject()
             
         ok_button.clicked.connect(on_ok)
-        cancel_button.clicked.connect(on_cancel)
-        
+        cancel_button.clicked.connect(on_cancel)        
         button_layout.addWidget(ok_button)
         button_layout.addWidget(cancel_button)
         layout.addLayout(button_layout)
@@ -2350,6 +2854,248 @@ class MagicItemGenerator(QMainWindow):
             return selection_combo.currentText()
         else:
             return None
+
+    def update_spell_selection(self):
+        """Update spell selection UI based on current class and level"""
+        class_name = self.class_combo.currentText()
+        level = self.level_spin.value()
+        
+        print(f"[DEBUG] update_spell_selection: class_name='{class_name}', level={level}")
+        
+        # Clear existing spell widgets
+        for widget_list in self.spell_widgets.values():
+            for widget in widget_list:
+                widget.deleteLater()
+        self.spell_widgets.clear()
+        
+        # Clear the layout
+        while self.spell_levels_layout.count():
+            item = self.spell_levels_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+          # Check if class is a spellcaster
+        caster_type = self.get_caster_type(class_name)
+        print(f"[DEBUG] caster_type: {caster_type}")
+        if not caster_type or caster_type == "none":
+            self.spell_info_label.setText('This class does not cast spells.')
+            return
+        
+        # Get spell slots for this level
+        spell_slots = self.get_spell_slots(caster_type, level)
+        print(f"[DEBUG] spell_slots: {spell_slots}")
+        if not spell_slots:
+            self.spell_info_label.setText('No spell slots available at this level.')
+            return
+        
+        # Get class spell list
+        class_spells = self.get_class_spells(class_name)
+        print(f"[DEBUG] class_spells keys: {list(class_spells.keys()) if class_spells else 'None'}")
+        if not class_spells:
+            self.spell_info_label.setText('No spells available for this class.')
+            return
+        
+        # Update info label
+        slot_info = ', '.join([f"{slots} {spell_level}" for spell_level, slots in spell_slots.items()])
+        self.spell_info_label.setText(f'Spell Slots: {slot_info}')
+        
+        # First, create cantrip selection if applicable
+        cantrips_known = self.get_cantrips_known(class_name, level)
+        if cantrips_known > 0:
+            self.create_spell_level_section('0th', class_spells, class_name)
+        
+        # Create spell selection for each spell level
+        for spell_level in sorted(spell_slots.keys(), key=lambda x: int(x.replace('st', '').replace('nd', '').replace('rd', '').replace('th', ''))):
+            self.create_spell_level_section(spell_level, class_spells, class_name)
+    
+    def get_caster_type(self, class_name):
+        """Get the caster type for a class"""
+        print(f"[DEBUG] get_caster_type: class_name='{class_name}'")
+        print(f"[DEBUG] Available classes: {[entry.get('name', '') for entry in self.class_data]}")
+        for entry in self.class_data:
+            if entry.get('name', '').strip() == class_name:
+                caster_type = entry.get('caster_type')
+                print(f"[DEBUG] Found class, caster_type: {caster_type}")
+                return caster_type
+        print(f"[DEBUG] Class not found in class_data")
+        return None
+    
+    def get_spell_slots(self, caster_type, level):
+        """Get spell slots for a caster type and level"""
+        print(f"[DEBUG] get_spell_slots: caster_type='{caster_type}', level={level}")
+        
+        # Map class caster types to spell slot table keys
+        caster_type_map = {
+            'full': 'full_caster',
+            'half': 'half_caster', 
+            'third': 'third_caster',
+            'pact': 'pact_caster'
+        }
+        
+        table_key = caster_type_map.get(caster_type, caster_type)
+        print(f"[DEBUG] table_key: {table_key}")
+        
+        try:
+            with open('classes.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                spell_tables = data.get('spell_slot_tables', {})
+                print(f"[DEBUG] Available spell table keys: {list(spell_tables.keys())}")
+                if table_key in spell_tables:
+                    progression = spell_tables[table_key].get('progression', {})
+                    result = progression.get(str(level), {})
+                    print(f"[DEBUG] Spell slots result: {result}")
+                    return result
+        except Exception as e:
+            print(f"[DEBUG] Exception in get_spell_slots: {e}")
+        return {}
+    
+    def get_class_spells(self, class_name):
+        """Get available spells for a class"""
+        print(f"[DEBUG] get_class_spells: class_name='{class_name}'")
+        if not self.spell_data:
+            print(f"[DEBUG] No spell data loaded")
+            return {}
+        
+        print(f"[DEBUG] Total spells in data: {len(self.spell_data)}")
+        
+        # Group spells by level for this class
+        class_spells = {}
+        spell_count = 0
+        for spell in self.spell_data:
+            spell_classes = spell.get('Classes', '') + ' ' + spell.get('Optional/Variant Classes', '')
+            if class_name in spell_classes:
+                spell_count += 1
+                level = spell.get('Level', '')
+                if level == 'Cantrip':
+                    level = '0th'
+                elif not level.endswith(('st', 'nd', 'rd', 'th')):
+                    level += 'th'
+                
+                if level not in class_spells:
+                    class_spells[level] = []
+                class_spells[level].append(spell)
+        
+        print(f"[DEBUG] Found {spell_count} spells for {class_name}")
+        print(f"[DEBUG] Spell levels available: {list(class_spells.keys())}")
+        return class_spells
+    
+    def create_spell_level_section(self, spell_level, class_spells, class_name):
+        """Create UI section for selecting spells of a specific level"""
+        # Get available spells for this level
+        available_spells = class_spells.get(spell_level, [])
+        if not available_spells:
+            return
+        
+        # Create section widget
+        section_widget = QWidget()
+        section_layout = QVBoxLayout(section_widget)
+        
+        # Section header
+        header_label = QLabel(f'{spell_level.title()} Level Spells')
+        header_label.setStyleSheet('font-weight: bold; font-size: 11pt;')
+        section_layout.addWidget(header_label)
+        
+        # Determine number of spells to select
+        if spell_level == '0th':  # Cantrips
+            num_spells = self.get_cantrips_known(class_name, self.level_spin.value())
+        else:
+            num_spells = self.get_spells_known(class_name, self.level_spin.value(), spell_level)
+        
+        if num_spells <= 0:
+            return
+        
+        info_label = QLabel(f'Select {num_spells} spells:')
+        section_layout.addWidget(info_label)
+        
+        # Create spell selection dropdowns
+        spell_combos = []
+        for i in range(num_spells):
+            combo = QComboBox()
+            combo.addItem('-- Select Spell --')
+            
+            # Add available spells
+            for spell in sorted(available_spells, key=lambda x: x.get('Name', '')):
+                spell_name = spell.get('Name', '')
+                if spell_name:
+                    combo.addItem(spell_name)
+            
+            section_layout.addWidget(combo)
+            spell_combos.append(combo)
+        
+        # Store widgets for this spell level
+        if spell_level not in self.spell_widgets:
+            self.spell_widgets[spell_level] = []
+        self.spell_widgets[spell_level].extend(spell_combos)
+        
+        # Add section to main layout
+        self.spell_levels_layout.addWidget(section_widget)
+    
+    def get_cantrips_known(self, class_name, level):
+        """Get number of cantrips known for a class at a given level"""
+        # Basic cantrip progression for most full casters
+        cantrip_progression = {
+            'Bard': {1: 2, 4: 3, 10: 4},
+            'Cleric': {1: 3, 4: 4, 10: 5},
+            'Druid': {1: 2, 4: 3, 10: 4},
+            'Sorcerer': {1: 4, 4: 5, 10: 6},
+            'Warlock': {1: 2, 4: 3, 10: 4},
+            'Wizard': {1: 3, 4: 4, 10: 5},
+            'Artificer': {1: 2, 4: 2, 10: 3},
+        }
+        
+        if class_name not in cantrip_progression:
+            return 0
+        
+        progression = cantrip_progression[class_name]
+        cantrips = 0
+        for req_level in sorted(progression.keys(), reverse=True):
+            if level >= req_level:
+                cantrips = progression[req_level]
+                break
+        
+        return cantrips
+    
+    def get_spells_known(self, class_name, level, spell_level):
+        """Get number of spells known for a class at a given level"""
+        # This is a simplified version - in practice, different classes have different rules
+        # For prepared casters (Cleric, Druid, Wizard), they prepare spells equal to 
+        # their spellcasting modifier + level (minimum 1)
+        # For known casters (Bard, Sorcerer, Warlock), they have a fixed table
+        
+        prepared_casters = ['Cleric', 'Druid', 'Wizard', 'Artificer', 'Paladin', 'Ranger']
+        
+        if class_name in prepared_casters:
+            # For prepared casters, show a reasonable number of spell slots
+            # This is simplified - in reality they prepare based on ability modifier + level
+            return min(level + 1, 10)  # Cap at 10 for UI purposes
+        else:
+            # For known casters, use simplified progression
+            known_progression = {
+                1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10,
+                10: 11, 11: 12, 12: 12, 13: 13, 14: 13, 15: 14, 16: 14,
+                17: 15, 18: 15, 19: 15, 20: 15
+            }
+            return known_progression.get(level, 2)
+    
+    def get_selected_spells(self):
+        """Get all selected spells"""
+        selected = {}
+        for spell_level, widgets in self.spell_widgets.items():
+            spells = []
+            for widget in widgets:
+                if hasattr(widget, 'currentText'):
+                    spell = widget.currentText()
+                    if spell and spell != '-- Select Spell --':
+                        spells.append(spell)
+            if spells:
+                selected[spell_level] = spells
+        return selected
+    
+    def get_spell_info(self, spell_name):
+        """Get detailed information for a spell"""
+        for spell in self.spell_data:
+            if spell.get('Name', '').strip() == spell_name:
+                return spell
+        return None
 
 def gui_main():
     app = QApplication(sys.argv)
