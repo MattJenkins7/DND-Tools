@@ -323,8 +323,6 @@ class MagicItemGenerator(QMainWindow):
         top_bar.addWidget(dark_btn)
         top_bar.addStretch()
         viewer_layout.addLayout(top_bar)
-
-        # --- Search/filter bar ---
         filter_bar = QHBoxLayout()
         filter_label = QLabel('Search:')
         self.filter_edit = QLineEdit()
@@ -337,8 +335,6 @@ class MagicItemGenerator(QMainWindow):
         filter_bar.addWidget(clear_filter_btn)
         filter_bar.addStretch()
         viewer_layout.addLayout(filter_bar)
-
-        # --- Table ---
         self.table = QTableWidget()
         self.table.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.SelectedClicked)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -351,8 +347,6 @@ class MagicItemGenerator(QMainWindow):
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         viewer_layout.addWidget(self.table)
-
-        # --- Add Potions/Gemstones ---
         add_pg_bar = QHBoxLayout()
         add_pg_bar.addWidget(QLabel('Add Potions/Gemstones:'))
         add_pg_bar.addWidget(QLabel('Number of Potions:'))
@@ -373,8 +367,6 @@ class MagicItemGenerator(QMainWindow):
         add_pg_bar.addWidget(add_gem_btn)
         add_pg_bar.addStretch()
         viewer_layout.addLayout(add_pg_bar)
-
-        # --- Add Item by Rarity/Name ---
         add_item_bar = QHBoxLayout()
         add_item_bar.addWidget(QLabel('Add Item by Rarity/Name:'))
         self.additem_rarity_combo = QComboBox()
@@ -388,8 +380,6 @@ class MagicItemGenerator(QMainWindow):
         add_item_bar.addWidget(additem_btn)
         add_item_bar.addStretch()
         viewer_layout.addLayout(add_item_bar)
-
-        # --- Add Custom Item ---
         add_custom_bar = QGridLayout()
         add_custom_bar.addWidget(QLabel('Add Custom Item:'), 0, 0)
         add_custom_bar.addWidget(QLabel('Name:'), 0, 1)
@@ -412,8 +402,6 @@ class MagicItemGenerator(QMainWindow):
         addcustom_btn.clicked.connect(self.add_custom_item)
         add_custom_bar.addWidget(addcustom_btn, 0, 7, 2, 1)
         viewer_layout.addLayout(add_custom_bar)
-
-        # --- Text Preview ---
         self.preview_label = QLabel('Text Preview:')
         self.preview_label.setStyleSheet('font-weight: bold; font-size: 12pt; margin-top: 8px;')
         viewer_layout.addWidget(self.preview_label)
@@ -421,8 +409,6 @@ class MagicItemGenerator(QMainWindow):
         self.preview_text.setReadOnly(True)
         self.preview_text.setStyleSheet('font-size: 12pt; font-family: Segoe UI, Arial, sans-serif; background: #f8f8f8; padding: 8px;')
         viewer_layout.addWidget(self.preview_text)
-
-        # --- Keyboard shortcuts ---
         self.table.installEventFilter(self)
         self.shortcut_actions = {
             (Qt.ControlModifier, Qt.Key_S): self.save_csv,
@@ -516,11 +502,9 @@ class MagicItemGenerator(QMainWindow):
             self.preview_text.setPlainText('')
 
     def on_table_item_changed(self, item):
-        # Update the underlying data when a cell is edited
         row_idx = item.row()
         col_idx = item.column()
         if 0 <= row_idx < len(self.filtered_rows):
-            # Find the actual row in self.csv_data['rows']
             actual_row = self.filtered_rows[row_idx]
             actual_idx = self.csv_data['rows'].index(actual_row)
             self.csv_data['rows'][actual_idx][col_idx] = item.text()
@@ -554,7 +538,6 @@ class MagicItemGenerator(QMainWindow):
         except Exception:
             QMessageBox.critical(self, 'Error', 'Could not load magic items.csv.')
             return
-        # Find column indices by header
         def col_idx(col_name):
             for i, col in enumerate(magic_header):
                 if col.strip().lower() == col_name:
@@ -619,7 +602,6 @@ class MagicItemGenerator(QMainWindow):
             return
         for gem, quality, value in gems:
             row = ['Gemstone', quality, gem, str(value), '', f'{quality} {gem} ({value} gp)']
-            # Pad to match header
             while len(row) < len(self.csv_data['header']):
                 row.append('')
             self.csv_data['rows'].append(row)
@@ -651,7 +633,6 @@ class MagicItemGenerator(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'Could not load magic items.csv: {e}')
             return
-        # Find column indices by header
         def col_idx(col_name):
             for i, col in enumerate(magic_header):
                 if col.strip().lower() == col_name:
@@ -729,7 +710,6 @@ class MagicItemGenerator(QMainWindow):
         self.status_bar.showMessage(f'Added custom item: {name} ({rarity.title()})')
 
     def keyPressEvent(self, event):
-        # Keyboard shortcuts: Ctrl+S (save), Delete (delete), Ctrl+F (focus filter)
         if event.matches(QKeySequence.Save):
             self.save_csv()
             event.accept()
@@ -759,7 +739,6 @@ class MagicItemGenerator(QMainWindow):
             self.setStyleSheet("")
 
     def make_collapsible_section(self, title, content_widget):
-        # Returns a QWidget with a toggle button and collapsible content
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -786,18 +765,13 @@ class MagicItemGenerator(QMainWindow):
         char_tab = QWidget()
         char_layout = QVBoxLayout()
         char_tab.setLayout(char_layout)
-
-        # Initialize required attributes
         self.required_race_skills = 0
         self.allowed_race_skills = []
         self.required_class_skills = 0
         self.allowed_class_skills = []
-
-        # --- Race Dropdown ---
         race_bar = QHBoxLayout()
         race_label = QLabel('Race:')
         self.race_combo = QComboBox()
-        # Load races from races.csv and store full data for info display
         self.race_data = []
         races = []
         try:
@@ -816,8 +790,6 @@ class MagicItemGenerator(QMainWindow):
         race_bar.addWidget(self.race_combo)
         race_bar.addStretch()
         char_layout.addLayout(race_bar)
-
-        # --- Race Info Display ---
         self.race_info_label = QLabel()
         self.race_info_label.setWordWrap(True)
         self.race_info_label.setStyleSheet('font-size: 11pt; background: #f8f8f8; padding: 8px; border: 1px solid #ccc;')
@@ -831,8 +803,6 @@ class MagicItemGenerator(QMainWindow):
 
         self.race_combo.currentTextChanged.connect(self.update_race_info)
         self.update_race_info(self.race_combo.currentText())
-
-        # --- Background Dropdown ---
         bg_bar = QHBoxLayout()
         bg_label = QLabel('Background:')
         self.bg_combo = QComboBox()
@@ -854,8 +824,6 @@ class MagicItemGenerator(QMainWindow):
         bg_bar.addWidget(self.bg_combo)
         bg_bar.addStretch()
         char_layout.addLayout(bg_bar)
-
-        # --- Background Info Display ---
         self.bg_info_label = QLabel()
         self.bg_info_label.setWordWrap(True)
         self.bg_info_label.setStyleSheet('font-size: 11pt; background: #f8f8f8; padding: 8px; border: 1px solid #ccc;')
@@ -869,8 +837,6 @@ class MagicItemGenerator(QMainWindow):
 
         self.bg_combo.currentTextChanged.connect(self.update_bg_info)
         self.update_bg_info(self.bg_combo.currentText())
-
-        # --- Class Dropdown ---
         class_bar = QHBoxLayout()
         class_label = QLabel('Class:')
         self.class_combo = QComboBox()
@@ -893,31 +859,22 @@ class MagicItemGenerator(QMainWindow):
         class_bar.addWidget(self.class_combo)
         class_bar.addStretch()
         char_layout.addLayout(class_bar)
-
-        # --- Class Info Display ---
         self.class_info_label = QLabel()
         self.class_info_label.setWordWrap(True)
         self.class_info_label.setStyleSheet('font-size: 12pt; background: #f8f8f8; padding: 10px; border: 2px solid #888;')
-        # Put class info label in a scroll area
         class_scroll = QScrollArea()
         class_scroll.setWidgetResizable(True)
         class_scroll.setMinimumHeight(200)
         class_scroll.setMaximumHeight(500)
         class_scroll.setWidget(self.class_info_label)
         class_info_section = self.make_collapsible_section('Show Class Details', class_scroll)
-        # Add class section with stretch to make it dominant
         char_layout.addWidget(class_info_section, stretch=2)
-
         self.class_combo.currentTextChanged.connect(self.update_class_info)
         self.update_class_info(self.class_combo.currentText())
-
-        # --- Stat Generation Section ---
         stat_gen_bar = QHBoxLayout()
         stat_label = QLabel('Stat Generation:')
         stat_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
         stat_gen_bar.addWidget(stat_label)
-
-        # --- Stat Section (Unified Row per Stat) ---
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         stat_grid = QGridLayout()
         stat_grid.addWidget(QLabel('<b>Stat</b>'), 0, 0)
@@ -947,8 +904,6 @@ class MagicItemGenerator(QMainWindow):
             self.stat_total_labels.append(total_label)
         stat_grid.setHorizontalSpacing(12)
         stat_grid.setVerticalSpacing(4)
-
-        # --- ASI Source Selection (Radio Buttons) ---
         from PySide6.QtWidgets import QRadioButton, QButtonGroup
         asi_radio_bar = QHBoxLayout()
         asi_radio_bar.addWidget(QLabel('Apply Ability Score Increases from:'))
@@ -969,8 +924,6 @@ class MagicItemGenerator(QMainWindow):
         asi_radio_bar.addStretch()
         self.asi_group.buttonClicked.connect(self.update_stat_totals)
         self.asi_group.buttonClicked.connect(self.on_asi_source_changed)
-
-        # --- Stat Generation Parameters ---
         param_bar = QHBoxLayout()
         self.lowest_stat_min_spin = QSpinBox()
         self.lowest_stat_min_spin.setRange(1, 20)
@@ -1005,15 +958,11 @@ class MagicItemGenerator(QMainWindow):
         param_bar.addWidget(QLabel('Average Max:'))
         param_bar.addWidget(self.average_max_spin)
         param_bar.addStretch()
-
-        # --- Generate Button ---
         stat_controls_bar = QHBoxLayout()
         gen_btn = QPushButton('Generate Stats')
         gen_btn.clicked.connect(self.generate_stats)
         stat_controls_bar.addWidget(gen_btn)
         stat_controls_bar.addStretch()
-
-        # Add to layout
         char_layout.addLayout(race_bar)
         char_layout.addWidget(race_info_section)
         char_layout.addLayout(bg_bar)
@@ -1023,7 +972,7 @@ class MagicItemGenerator(QMainWindow):
         char_layout.addLayout(asi_radio_bar)
         char_layout.addLayout(stat_grid)
         char_layout.addLayout(stat_controls_bar)
-        char_layout.addLayout(param_bar)        # --- Character Info Inputs (Name, Alignment, Player Name) ---
+        char_layout.addLayout(param_bar)
         info_bar = QHBoxLayout()
         info_bar.addWidget(QLabel('Character Name:'))
         self.char_name_edit = QLineEdit()
@@ -1041,28 +990,22 @@ class MagicItemGenerator(QMainWindow):
         info_bar.addWidget(self.player_name_edit)
         info_bar.addStretch()
         char_layout.insertLayout(0, info_bar)
-        
-        # Connect stat spinboxes to update totals (no prompt)
         for spin in self.stat_spinboxes:
             spin.valueChanged.connect(self.update_stat_totals)
-        # Connect ASI radio group to prompt+update
         self.asi_group.buttonClicked.disconnect()
-        self.asi_group.buttonClicked.connect(self.on_asi_source_changed)        # --- Skills Generation Section ---
+        self.asi_group.buttonClicked.connect(self.on_asi_source_changed)       
         skill_gen_bar = QHBoxLayout()
         skill_label = QLabel('Skill Generation:')
         skill_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
         skill_gen_bar.addWidget(skill_label)
-        
-        # --- Proficiency Selection Section (with dropdowns for allowed skills) ---
         self.proficiency_widget = QWidget()
         self.proficiency_layout = QVBoxLayout()
         self.proficiency_widget.setLayout(self.proficiency_layout)
-        self.proficiency_dropdowns = []  # Initialize the dropdowns list
+        self.proficiency_dropdowns = [] 
         char_layout.addWidget(QLabel('Race Skill Proficiencies:'))
         char_layout.addWidget(self.proficiency_widget)
 
         def update_proficiency_dropdowns(race_name):
-            # Clear old dropdowns
             for dropdown in self.proficiency_dropdowns:
                 self.proficiency_layout.removeWidget(dropdown)
                 dropdown.deleteLater()
@@ -1084,7 +1027,6 @@ class MagicItemGenerator(QMainWindow):
                             skills = [s.strip() for s in skills_part.split(',') if s.strip()]
                             self.required_race_skills = num_to_choose
                             self.allowed_race_skills = skills
-                            # Create dropdowns equal to the number of skills to choose
                             for i in range(num_to_choose):
                                 dropdown = QComboBox()
                                 dropdown.addItem("-- Select Skill --")
@@ -1093,7 +1035,6 @@ class MagicItemGenerator(QMainWindow):
                                 self.proficiency_layout.addWidget(dropdown)
                                 self.proficiency_dropdowns.append(dropdown)
                         else:
-                            # Fixed skill, show as disabled dropdown with only that option
                             dropdown = QComboBox()
                             dropdown.addItem(prof_choice)
                             dropdown.setEnabled(False)
@@ -1104,14 +1045,13 @@ class MagicItemGenerator(QMainWindow):
                     break
 
         def prevent_duplicate_selections():
-            # Prevent the same skill from being selected in multiple dropdowns
             selected_skills = [dropdown.currentText() for dropdown in self.proficiency_dropdowns 
                              if dropdown.currentText() != "-- Select Skill --"]
             for dropdown in self.proficiency_dropdowns:
                 current_selection = dropdown.currentText()
                 dropdown.blockSignals(True)
                 dropdown.clear()
-                dropdown.addItem("-- Select Skill --")                # Add skills that aren't selected elsewhere, or the current selection
+                dropdown.addItem("-- Select Skill --")
                 for skill in self.allowed_race_skills:
                     if skill not in selected_skills or skill == current_selection:
                         dropdown.addItem(skill)
@@ -1126,17 +1066,14 @@ class MagicItemGenerator(QMainWindow):
         self.get_selected_race_skills = get_selected_race_skills
         self.race_combo.currentTextChanged.connect(self.update_proficiency_dropdowns)
         self.update_proficiency_dropdowns(self.race_combo.currentText())
-        
-        # --- Class Skill Proficiencies Section ---
         self.class_proficiency_widget = QWidget()
         self.class_proficiency_layout = QVBoxLayout()
         self.class_proficiency_widget.setLayout(self.class_proficiency_layout)
-        self.class_proficiency_dropdowns = []  # Initialize the dropdowns list
+        self.class_proficiency_dropdowns = []
         char_layout.addWidget(QLabel('Class Skill Proficiencies:'))
         char_layout.addWidget(self.class_proficiency_widget)
 
         def update_class_proficiency_dropdowns(class_name):
-            # Clear old dropdowns
             for dropdown in self.class_proficiency_dropdowns:
                 self.class_proficiency_layout.removeWidget(dropdown)
                 dropdown.deleteLater()
@@ -1155,7 +1092,7 @@ class MagicItemGenerator(QMainWindow):
                         try:
                             num_to_choose = int(skills_field[0])
                         except Exception:
-                            num_to_choose = 2 # fallback to 2 if not valid
+                            num_to_choose = 2
                         skills = [s for s in skills_field[1:]]
                         self.required_class_skills = num_to_choose
                         self.allowed_class_skills = skills
@@ -1191,21 +1128,19 @@ class MagicItemGenerator(QMainWindow):
 
         self.update_class_proficiency_dropdowns = update_class_proficiency_dropdowns
         self.get_selected_class_skills = get_selected_class_skills
-        self.class_combo.currentTextChanged.connect(self.update_class_proficiency_dropdowns)        # Call after UI is fully constructed
+        self.class_combo.currentTextChanged.connect(self.update_class_proficiency_dropdowns)
         QTimer.singleShot(0, lambda: self.update_class_proficiency_dropdowns(self.class_combo.currentText()))
-        
-        # --- Spell Selection Section ---
+
         self.spell_data = []
-        self.selected_spells = {}  # {spell_level: [spell_names]}
-        self.spell_widgets = {}    # {spell_level: [QComboBox widgets]}        # Load spells from spells.csv
+        self.selected_spells = {}
+        self.spell_widgets = {}
         try:
             with open('spells.csv', 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 self.spell_data = list(reader)
         except Exception:
             self.spell_data = []
-        
-        # Create spell selection widget (initially hidden)
+
         self.spell_section_widget = QWidget()
         spell_section_layout = QVBoxLayout(self.spell_section_widget)
         
@@ -1216,27 +1151,19 @@ class MagicItemGenerator(QMainWindow):
         self.spell_info_label = QLabel('No spells available for this class/level.')
         self.spell_info_label.setWordWrap(True)
         spell_section_layout.addWidget(self.spell_info_label)
-        
-        # Container for spell level sections
         self.spell_levels_widget = QWidget()
         self.spell_levels_layout = QVBoxLayout(self.spell_levels_widget)
         spell_section_layout.addWidget(self.spell_levels_widget)
-        
-        # Make it collapsible
         spell_collapsible_section = self.make_collapsible_section('Spell Selection', self.spell_section_widget)
         char_layout.addWidget(spell_collapsible_section)
-          # Connect level changes to update spell selection
         self.level_spin.valueChanged.connect(self.update_spell_selection)
         self.class_combo.currentTextChanged.connect(self.update_spell_selection)
-          # Initialize spell selection
-        QTimer.singleShot(500, self.update_spell_selection)  # Increased delay to ensure all data is loaded
+        QTimer.singleShot(500, self.update_spell_selection)
         
-        # --- Export to PDF Button (moved to bottom) ---
         export_pdf_btn = QPushButton('Export to PDF')
         export_pdf_btn.clicked.connect(self.export_character_to_pdf)
         char_layout.addWidget(export_pdf_btn)
 
-        # --- Wrap the whole tab in a scroll area ---
         outer_scroll = QScrollArea()
         outer_scroll.setWidgetResizable(True)
         container = QWidget()
@@ -1273,7 +1200,6 @@ class MagicItemGenerator(QMainWindow):
             self.stat_total_labels[i].setText(str(values[i] + asi.get(stat, 0)))
 
     def on_asi_source_changed(self):
-        # Only prompt for ASI choices when the user changes the ASI source (radio buttons)
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         race = self.asi_race_radio.isChecked() or self.asi_both_radio.isChecked()
         background = self.asi_bg_radio.isChecked() or self.asi_both_radio.isChecked()
@@ -1325,7 +1251,6 @@ class MagicItemGenerator(QMainWindow):
         while True:
             numbers.clear()
             for j in range(y):
-                # Standard 4d6 drop lowest
                 rolls = [random.randint(1, 6) for _ in range(x)]
                 total = sum(rolls) - min(rolls)
                 numbers.append(total)
@@ -1344,17 +1269,14 @@ class MagicItemGenerator(QMainWindow):
             spin.blockSignals(True)
             spin.setValue(numbers[i])
             spin.blockSignals(False)
-        # Auto-select 'Neither' for ASI source after generating stats
         self.asi_neither_radio.setChecked(True)
         self.update_stat_totals()
 
     def handle_stat_swap(self, changed_idx, *args):
         changed_combo = self.stat_combos[changed_idx]
         selected_idx = changed_combo.currentIndex()
-        # Check for duplicate in other combos
         for i, combo in enumerate(self.stat_combos):
             if i != changed_idx and combo.currentIndex() == selected_idx:
-                # Swap the indices
                 combo.blockSignals(True)
                 changed_combo.blockSignals(True)
                 combo.setCurrentIndex(self.stat_combos[changed_idx].property('lastIndex') if combo.property('lastIndex') is not None else changed_idx)
@@ -1362,26 +1284,22 @@ class MagicItemGenerator(QMainWindow):
                 combo.blockSignals(False)
                 changed_combo.blockSignals(False)
                 break
-        # Store the last index for each combo
         for i, combo in enumerate(self.stat_combos):
             combo.setProperty('lastIndex', combo.currentIndex())
 
     def update_stat_dropdowns(self):
-        pass  # No disabling needed anymore
+        pass
 
     def update_race_info(self, race_name):
-        # Find the first matching race row
         for row in self.race_data:
             if row['name'].strip() == race_name:
                 info = []
                 for key, val in row.items():
                     if key is not None and val and key != 'name':
                         if key.strip().lower() == 'features':
-                            # Handle literal \n and real newlines
-                            features = str(val).replace('\\n', '\n')  # Convert literal \n to real newline
+                            features = str(val).replace('\\n', '\n')
                             features = features.replace('\r\n', '\n').replace('\r', '\n')
                             features = features.strip()
-                            # Split on real newlines
                             feature_lines = [f for f in features.split('\n') if f.strip()]
                             features_html = '<br>'.join(f"• {f.strip()}" for f in feature_lines)
                             info.append(f"<b>{str(key).title().replace('_', ' ')}:</b><br>{features_html}")
@@ -1392,7 +1310,6 @@ class MagicItemGenerator(QMainWindow):
         self.race_info_label.setText('')
 
     def update_bg_info(self, bg_name):
-        # Find the first matching background row
         for row in self.background_data:
             if row['name'].strip() == bg_name:
                 info = []
@@ -1404,11 +1321,9 @@ class MagicItemGenerator(QMainWindow):
         self.bg_info_label.setText('')
 
     def update_class_info(self, class_name):
-        # Find the first matching class row
         for row in self.class_data:
             if row['name'].strip() == class_name:
                 info = []
-                # Basic info
                 if 'hit_die' in row:
                     info.append(f"<b>Hit Die:</b> {row['hit_die']}")
                 if 'primary_abilities' in row:
@@ -1418,7 +1333,6 @@ class MagicItemGenerator(QMainWindow):
                     info.append(f"<b>Subclass Pick Level:</b> {row['subclass_pick_level']}")
                 if 'caster_type' in row and row['caster_type'] != 'none':
                     info.append(f"<b>Caster Type:</b> {row['caster_type'].capitalize()}")
-                # Features by level (names only)
                 features = row.get('features', {})
                 if features:
                     feature_lines = []
@@ -1428,7 +1342,6 @@ class MagicItemGenerator(QMainWindow):
                             feature_lines.append(f"<b>Level {lvl}:</b> {names}")
                     if feature_lines:
                         info.append("<b>Features by Level:</b><br>" + '<br>'.join(feature_lines))
-                # Subclasses
                 subclasses = row.get('subclasses', [])
                 if subclasses:
                     subclass_names = ', '.join(sc['name'] for sc in subclasses if 'name' in sc)
@@ -1438,7 +1351,6 @@ class MagicItemGenerator(QMainWindow):
         self.class_info_label.setText('')
 
     def prompt_and_apply_asi(self):
-        # Prompt user for source of ability score increases
         from PySide6.QtWidgets import QMessageBox
         msg = QMessageBox(self)
         msg.setWindowTitle('Apply Ability Score Increases')
@@ -1462,13 +1374,11 @@ class MagicItemGenerator(QMainWindow):
         stat_values = [spin.value() for spin in self.stat_spinboxes]
         print(f"[DEBUG] Current stat values before ASI: {dict(zip(stat_names, stat_values))}")
         asi = {name: 0 for name in stat_names}
-        # Parse race ASI
         if race:
             race_name = self.race_combo.currentText()
             print(f"[DEBUG] Selected race: {race_name}")
             for row in self.race_data:
                 if row['name'].strip() == race_name:
-                    # Use correct field name for races.csv
                     asi_str = row.get('Ability Score Increase', '')
                     print(f"[DEBUG] Race ASI string: {asi_str}")
                     asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Race')
@@ -1476,13 +1386,11 @@ class MagicItemGenerator(QMainWindow):
                     for k, v in asi_result.items():
                         asi[k] += v
                     break
-        # Parse background ASI
         if background:
             bg_name = self.bg_combo.currentText()
             print(f"[DEBUG] Selected background: {bg_name}")
             for row in self.background_data:
                 if row['name'].strip() == bg_name:
-                    # Use correct field name for backgrounds.csv
                     asi_str = row.get('ability', '')
                     print(f"[DEBUG] Background ASI string: {asi_str}")
                     asi_result, _ = self.parse_asi_string_with_prompt(asi_str, 'Background')
@@ -1498,11 +1406,6 @@ class MagicItemGenerator(QMainWindow):
 
     def parse_asi_string_with_prompt(self, asi_str, source_label):
         print(f"[DEBUG] Parsing ASI string: '{asi_str}' from {source_label}")
-        """
-        Returns: (asi_dict, prompt_dict or None)
-        asi_dict: {stat: value} for direct assignments
-        prompt_dict: { 'type': ..., 'source': ..., ... } for user input if needed
-        """
         import re
         stat_names = {'STR': 'STR', 'DEX': 'DEX', 'CON': 'CON', 'WIS': 'WIS', 'INT': 'INT', 'CHA': 'CHA',
                       'STRENGTH': 'STR', 'DEXTERITY': 'DEX', 'CONSTITUTION': 'CON', 'WISDOM': 'WIS', 'INTELLIGENCE': 'INT', 'CHARISMA': 'CHA',
@@ -1511,16 +1414,11 @@ class MagicItemGenerator(QMainWindow):
         asi_str = asi_str.strip()
         if not asi_str:
             return asi, None
-        # --- Minor issue 1 fix: handle multiple comma-separated bonuses for backgrounds ---
-        # Direct assignments: e.g. "Cha +2, Dex +1" or "+1 DEX, +1 INT"
-        # --- Fix: handle '+1 wis, +1 cha' and similar forms robustly ---
-        # Accept forms like '+1 wis, +1 cha', 'wis +1, cha +1', etc.
         direct_pattern = r'([+-]?\d+)\s*(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA)|' \
                         r'(STR|DEX|CON|WIS|INT|CHA|STRENGTH|DEXTERITY|CONSTITUTION|WISDOM|INTELLIGENCE|CHARISMA)\s*([+-]?\d+)'
         direct_matches = re.findall(direct_pattern, asi_str.upper())
         if direct_matches:
             for m in direct_matches:
-                # m is a tuple of 4 elements, only one pair will be filled
                 if m[0] and m[1]:
                     val, stat = m[0], m[1]
                 elif m[2] and m[3]:
@@ -1535,12 +1433,6 @@ class MagicItemGenerator(QMainWindow):
                         pass
             if not re.search(r'choose|point|option|among|other|one of', asi_str, re.IGNORECASE):
                 return asi, None
-        # Handle choose/points/option/among/other/one of
-        # Examples:
-        #   "Choose any +2"
-        #   "Choose any +2, Choose any other +1"
-        #   "Choose one of: (a) Choose any +2; choose any other +1 (b) Choose three different +1"
-        #   "3 points among Wis, Cha, Int"
         prompt = {'type': None, 'source': source_label, 'raw': asi_str}
         if re.search(r'choose one of', asi_str, re.IGNORECASE):
             prompt['type'] = 'points_among'
@@ -1549,10 +1441,8 @@ class MagicItemGenerator(QMainWindow):
             return asi, prompt
         elif re.search(r'choose any', asi_str, re.IGNORECASE):
             prompt['type'] = 'choose_any'
-            # e.g. "Choose any +2, Choose any other +1"
             choose_matches = re.findall(r'choose any[^\d+-]*([+-]?\d+)', asi_str, re.IGNORECASE)
             prompt['amounts'] = [int(x) for x in choose_matches]
-            # Check for "other" for secondary pick
             if re.search(r'other', asi_str, re.IGNORECASE):
                 prompt['other'] = True
         elif re.search(r'points among', asi_str, re.IGNORECASE):
@@ -1564,14 +1454,11 @@ class MagicItemGenerator(QMainWindow):
             prompt['allowed'] = list({stat_names.get(s, s) for s in allowed_stats})
         elif re.search(r'choose any', asi_str, re.IGNORECASE):
             prompt['type'] = 'choose_any'
-            # fallback
         else:
             prompt['type'] = 'unknown'
         return asi, prompt
 
     def prompt_asi_choices(self, asi_prompts):
-        # For each prompt, show a dialog to the user to select stats and distribution
-        # Returns a dict {stat: value}
         from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QSpinBox, QPushButton, QHBoxLayout, QListWidget, QListWidgetItem
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         asi_result = {k: 0 for k in stat_names}
@@ -1593,7 +1480,6 @@ class MagicItemGenerator(QMainWindow):
                     layout.addLayout(row)
                     picks.append((combo, amt))
                     def on_change(idx=idx):
-                        # Update other combos to prevent duplicate selection
                         selected = [c.currentText() for c, _ in picks]
                         for i, (c, _) in enumerate(picks):
                             c.blockSignals(True)
@@ -1635,7 +1521,6 @@ class MagicItemGenerator(QMainWindow):
                 for stat, spin in spinboxes:
                     asi_result[stat] += spin.value()
             elif prompt['type'] == 'choose_one_of':
-                # Let user pick one option, then recursively prompt for that
                 combo = QComboBox()
                 combo.addItems(prompt.get('options', []))
                 layout.addWidget(QLabel('Choose one option:'))
@@ -1646,7 +1531,6 @@ class MagicItemGenerator(QMainWindow):
                 dlg.setLayout(layout)
                 dlg.exec()
                 chosen = combo.currentText()
-                # Recursively parse and prompt for the chosen option
                 asi_sub, subprompt = self.parse_asi_string_with_prompt(chosen, prompt['source'])
                 for k, v in asi_sub.items():
                     asi_result[k] += v
@@ -1655,12 +1539,11 @@ class MagicItemGenerator(QMainWindow):
                     for k, v in subresult.items():
                         asi_result[k] += v
             else:
-                # fallback: do nothing
                 pass
         return asi_result    
     
     def export_character_to_pdf(self):
-        import re # Ensure re module is available in this scope        # Check that the required number of race skill proficiencies are selected
+        import re
         selected_skills = self.get_selected_race_skills()
         if self.required_race_skills and len(selected_skills) < self.required_race_skills:
             QMessageBox.critical(self, 'Error', f'Please select {self.required_race_skills} skill proficiency(ies) for your race before exporting.')
@@ -1670,8 +1553,7 @@ class MagicItemGenerator(QMainWindow):
             from pdfrw import PdfReader, PdfWriter
         except ImportError:
             QMessageBox.critical(self, 'Error', 'pdfrw is not installed. Please run: pip install pdfrw')
-            return        
-        # Gather data from UI
+            return
         char_name = self.char_name_edit.text().strip()
         alignment = self.alignment_combo.currentText()
         player_name = self.player_name_edit.text().strip()
@@ -1679,39 +1561,34 @@ class MagicItemGenerator(QMainWindow):
         level = self.level_spin.value()
         background = self.bg_combo.currentText()
         race = self.race_combo.currentText()
-        
-        # Set character name for PDF field (use "Unnamed" if no name entered)
         display_char_name = char_name or 'Unnamed'
-        
-        # Calculate proficiency bonus based on character level
-        proficiency_bonus = 2  # Level 1-4
+
+        proficiency_bonus = 2 
         if level >= 5:
-            proficiency_bonus = 3  # Level 5-8
+            proficiency_bonus = 3 
         if level >= 9:
-            proficiency_bonus = 4  # Level 9-12
+            proficiency_bonus = 4 
         if level >= 13:
-            proficiency_bonus = 5  # Level 13-16
+            proficiency_bonus = 5 
         if level >= 17:
-            proficiency_bonus = 6  # Level 17-20
-          # Get racial speed information
+            proficiency_bonus = 6 
         racial_speed = ''
         racial_speed_features = ''
         for row in self.race_data:
             if row.get('name', '').strip() == race:
                 speed_text = row.get('Speed', '').strip()
                 if speed_text:
-                    # Check if there are additional speed features after a comma
+
                     if ',' in speed_text:
                         parts = speed_text.split(',', 1)
                         racial_speed = parts[0].strip()
-                        # Extract additional features (everything after the first comma)
+
                         if len(parts) > 1 and parts[1].strip():
                             racial_speed_features = parts[1].strip()
                     else:
                         racial_speed = speed_text
                 break
-        
-        # Get class hit die information
+
         class_hit_die = ''
         for entry in self.class_data:
             if entry.get('name', '').strip() == class_name:
@@ -1720,7 +1597,6 @@ class MagicItemGenerator(QMainWindow):
                     class_hit_die = hit_die
                 break
 
-        # Get total ability scores (base + racial/background bonuses)
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         base_stats = {stat: self.stat_spinboxes[i].value() for i, stat in enumerate(stat_names)}
         
@@ -1749,15 +1625,13 @@ class MagicItemGenerator(QMainWindow):
                         asi[k] += v
                     break
         
-        # Calculate total stats (base + ASI bonuses)
         stats = {stat: base_stats[stat] + asi.get(stat, 0) for stat in stat_names}
-        
-        # Calculate modifiers based on total stats
+   
         def ability_mod(score):
-            # D&D 5e: (score - 10) // 2
+
             return (score - 10) // 2
         mods = {stat: ability_mod(val) for stat, val in stats.items()}
-        # Gather features for Features and Traits and AttacksSpellcasting
+
         attack_keywords = ['attack', 'strike', 'weapon', 'melee', 'ranged', 'shoot', 'hit']
         def is_attack_feature(text):
             t = text.lower()
@@ -1778,18 +1652,17 @@ class MagicItemGenerator(QMainWindow):
                         break
         bg_features = []
         bg_attacks = []
-        # Load feats data
         feats_data = []
         try:
             with open('feats.csv', 'r', encoding='utf-8') as f_feats:
                 reader_feats = csv.DictReader(f_feats)
                 feats_data = list(reader_feats)
         except Exception as e:
-            print(f"Error loading feats.csv: {e}") # Or handle more gracefully
+            print(f"Error loading feats.csv: {e}")
 
         for row in self.background_data:
             if row['name'].strip() == background:
-                print(f"[DEBUG] Selected background for PDF export: {background}") # DEBUG
+                print(f"[DEBUG] Selected background for PDF export: {background}")
                 for key, val in row.items():
                     if key and val and key.strip().lower() == 'description':
                         description_text = str(val).replace('\\\\n', '\\n').replace('\\r\\n', '\\n').replace('\\r', '\\n').strip()
@@ -2304,12 +2177,6 @@ class MagicItemGenerator(QMainWindow):
             'CP': '', 'SP': '', 'EP': '', 'GP': str(starting_gold), 'PP': '',
         }
 
-        # CORRECTED LOGIC for ProficienciesLang content and line breaks:
-        # The existing race_languages is the base.
-        # Then, append lines extracted from features, ensuring proper newlines.
-        
-        # Start with race_languages, ensuring it's a string.
-        # Replace literal '\\n' from CSV/input with actual newlines if necessary, though pdfrw usually handles '\n'.
         current_prof_lang_text = str(race_languages).replace('\\\\n', '\\n')
 
         if 'extracted_lines_for_prof_lang' in locals() and isinstance(extracted_lines_for_prof_lang, list) and extracted_lines_for_prof_lang:
@@ -2319,15 +2186,12 @@ class MagicItemGenerator(QMainWindow):
             # Append additional_text to current_prof_lang_text
             if current_prof_lang_text and additional_text: # Both have content
                 current_prof_lang_text += '\n' + additional_text
-            elif additional_text: # Only additional_text has content
+            elif additional_text:
                 current_prof_lang_text = additional_text
-            # If only current_prof_lang_text has content, it's already set.
-            # If both are empty, it remains empty.        # Add class proficiencies (armor, weapons, tools) to ProficienciesLang
         class_proficiencies = []
         for entry in self.class_data:
             if entry.get('name', '').strip() == class_name:
                 proficiencies = entry.get('proficiencies', {})
-                  # Add armor proficiencies with "armor" suffix (except shields)
                 armor_profs = proficiencies.get('armor', [])
                 for armor in armor_profs:
                     if armor.strip():
@@ -2336,7 +2200,6 @@ class MagicItemGenerator(QMainWindow):
                         else:
                             class_proficiencies.append(f"{armor.capitalize()} armor")
                 
-                # Add weapon proficiencies with "weapons" suffix
                 weapon_profs = proficiencies.get('weapons', [])
                 for weapon in weapon_profs:
                     if weapon.strip():
@@ -2344,35 +2207,29 @@ class MagicItemGenerator(QMainWindow):
                             class_proficiencies.append(weapon.capitalize())
                         else:
                             class_proficiencies.append(f"{weapon.capitalize()} weapons")
-                  # Add tool proficiencies (handle artisanchoice and artisaninstrumentchoice)
                 tool_profs = proficiencies.get('tools', [])
                 for tool in tool_profs:
                     if tool.strip():
                         if tool.lower() == 'artisanchoice':
-                            # Prompt user to choose an artisan's tool
                             selected_artisan_tool = self.prompt_artisan_tool_choice()
                             if selected_artisan_tool:
                                 class_proficiencies.append(selected_artisan_tool)
                             else:
-                                # User cancelled, show warning and use placeholder
                                 QMessageBox.warning(self, 'Warning', 
                                     'No artisan tool selected. Using "Artisan\'s Tools" as placeholder.')
                                 class_proficiencies.append("Artisan's Tools")
                         elif tool.lower() == 'artisaninstrumentchoice':
-                            # Prompt user to choose between artisan's tools or musical instrument
                             selected_tool_or_instrument = self.prompt_artisan_or_instrument_choice()
                             if selected_tool_or_instrument:
                                 class_proficiencies.append(selected_tool_or_instrument)
                             else:
-                                # User cancelled, show warning and use placeholder
                                 QMessageBox.warning(self, 'Warning', 
                                     'No tool/instrument selected. Using "Artisan\'s Tools or Musical Instrument" as placeholder.')
                                 class_proficiencies.append("Artisan's Tools or Musical Instrument")
                         else:
                             class_proficiencies.append(tool.capitalize())
                 break
-        
-        # Add class proficiencies to current_prof_lang_text
+
         if class_proficiencies:
             class_prof_text = '\n'.join(class_proficiencies)
             if current_prof_lang_text:
@@ -2380,15 +2237,12 @@ class MagicItemGenerator(QMainWindow):
             else:
                 current_prof_lang_text = class_prof_text
         pdf_data['ProficienciesLang'] = current_prof_lang_text
-        # END CORRECTED LOGIC
-
-        # Add saving throw proficiencies
         selected_class_name = self.class_combo.currentText()
         class_saving_throws = []
         if hasattr(self, 'class_data'):
             for c_data in self.class_data:
                 if c_data.get('name') == selected_class_name:
-                    class_saving_throws = [s.lower() for s in c_data.get('saving_throws', [])] # Ensure lowercase for comparison
+                    class_saving_throws = [s.lower() for s in c_data.get('saving_throws', [])]
                     break
         
         saving_throw_map = {
@@ -2406,7 +2260,6 @@ class MagicItemGenerator(QMainWindow):
             else:
                 pdf_data[pdf_field] = 'Off'
 
-        # Add correct skill proficiency checkboxes (Check Box 23-40)
         skill_checkbox_order = [
             'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception', 'History',
             'Insight', 'Intimidation', 'Investigation', 'Medicine', 'Nature', 'Perception',
@@ -2414,7 +2267,6 @@ class MagicItemGenerator(QMainWindow):
         ]
         for i, skill in enumerate(skill_checkbox_order, start=23):
             pdf_data[f'Check Box {i}'] = 'Yes' if skill_checkboxes.get(skill, False) else 'Off'
-          # Cross-reference equipment with weapons_no_desc.csv and fill weapon boxes
         weapon_data = {}
         try:
             with open('weapons_no_desc.csv', 'r', encoding='utf-8') as f:
@@ -2428,7 +2280,7 @@ class MagicItemGenerator(QMainWindow):
                         'properties': row.get('Properties', '')
                     }
         except Exception as e:
-            print(f"Error loading weapons_no_desc.csv: {e}")        # Get class weapon proficiencies for proficiency check
+            print(f"Error loading weapons_no_desc.csv: {e}") 
         class_weapon_profs = set()
         for entry in self.class_data:
             if entry.get('name', '').strip() == class_name:
@@ -2438,10 +2290,8 @@ class MagicItemGenerator(QMainWindow):
                     class_weapon_profs.add(weapon_type.lower().strip())
                 break
 
-        # Find weapons in consolidated equipment
         filled_weapons = []
         for item in equipment_list:
-            # Remove quantity indicator (e.g., "Javelin x6" -> "Javelin")
             clean_item = item.split(' x')[0].strip()
             weapon_key = clean_item.lower()
             
@@ -2451,29 +2301,22 @@ class MagicItemGenerator(QMainWindow):
                 weapon_type = weapon.get('type', '').lower()
                 damage = weapon.get('damage', '')
                 
-                # Determine if character is proficient with this weapon
                 is_proficient = False
                 if 'simple weapon' in weapon_type and 'simple' in class_weapon_profs:
                     is_proficient = True
                 elif 'martial weapon' in weapon_type and 'martial' in class_weapon_profs:
                     is_proficient = True
                 
-                # Determine which ability modifier to use based on weapon type
                 if 'ranged weapon' in weapon_type:
-                    # Ranged weapons use DEX
                     ability_mod = mods['DEX']
                 elif 'finesse' in properties:
-                    # Finesse weapons use the higher of STR or DEX
                     ability_mod = max(mods['STR'], mods['DEX'])
                 else:
-                    # Default to STR for melee weapons
                     ability_mod = mods['STR']
                 
-                # Calculate attack bonus (proficiency + ability modifier)
                 attack_bonus = ability_mod + (proficiency_bonus if is_proficient else 0)
                 attack_bonus_str = f"{attack_bonus:+d}"
                 
-                # Calculate damage (dice + ability modifier)
                 import re
                 if damage:
                     damage_match = re.match(r'(\d+d\d+)', damage)
@@ -2511,7 +2354,67 @@ class MagicItemGenerator(QMainWindow):
                     pdf_data[f'Wpn{i+1} AtkBonus '] = weapon['attack_bonus']
                 else:
                     pdf_data[f'Wpn{i+1} AtkBonus  '] = weapon['attack_bonus']
-                pdf_data[f'Wpn{i+1} Damage '] = weapon['damage']
+                pdf_data[f'Wpn{i+1} Damage '] = weapon['damage']        # Map selected spells to specific PDF fields
+        selected_spells = self.get_selected_spells()
+        if selected_spells:
+            # Define spell field mappings for each spell level
+            spell_field_mappings = {
+                'Cantrips': ['Spells 1014'] + [f'Spells 10{i}' for i in range(16, 23)],  # 1014, 1016-1022
+                '1': ['Spells 1015'] + [f'Spells 10{i}' for i in range(23, 34)],        # 1015, 1023-1033
+                '2': [f'Spells 10{i}' for i in range(34, 47)],                   # 1034-1046
+                '3': [f'Spells 10{i}' for i in range(47, 60)],                   # 1047-1059
+                '4': [f'Spells 10{i}' for i in range(61, 73)],                   # 1061-1072
+                '5': [f'Spells 10{i}' for i in range(73, 82)],                   # 1073-1081
+                '6': [f'Spells 10{i}' for i in range(82, 91)],                   # 1082-1090
+                '7': [f'Spells 10{i}' for i in range(91, 100)],                  # 1091-1099
+                '8': [f'Spells 101{i:02d}' for i in range(0, 7)],                # 10100-10106
+                '9': [f'Spells 101{i:02d}' for i in range(7, 14)]                # 10107-101013
+            }
+              # Map each spell level to its corresponding PDF fields
+            for spell_level, spells in selected_spells.items():
+                # Normalize spell level (handle "0th", "Cantrips", "1st", "2nd", etc.)
+                if spell_level.lower() in ['cantrips', '0th']:
+                    level_key = 'Cantrips'
+                else:
+                    # Extract numeric part from level (e.g., "1st" -> "1")
+                    level_match = re.match(r'(\d+)', spell_level)
+                    if level_match:
+                        level_key = level_match.group(1)
+                    else:
+                        continue
+                  # Get the field list for this spell level
+                if level_key in spell_field_mappings:
+                    field_list = spell_field_mappings[level_key]
+                      # Map each spell to a field (up to the number of available fields)
+                    for i, spell_name in enumerate(spells):
+                        if i < len(field_list):
+                            field_id = field_list[i]
+                            
+                            # Get additional spell information
+                            spell_info = self.get_spell_info(spell_name)
+                            if spell_info:
+                                casting_time = spell_info.get('Casting Time', '').strip()
+                                range_info = spell_info.get('Range', '').strip()
+                                components = spell_info.get('Components', '').strip()
+                                
+                                # Format: "Spell Name, Casting Time, Range, (Components)"
+                                formatted_spell = spell_name
+                                if casting_time:
+                                    formatted_spell += f", {casting_time}"
+                                if range_info:
+                                    formatted_spell += f", {range_info}"
+                                if components:
+                                    formatted_spell += f", ({components})"
+                                
+                                pdf_data[field_id] = formatted_spell
+                                print(f"DEBUG: Mapped spell '{formatted_spell}' to field '{field_id}' for level {level_key}")
+                            else:
+                                # Fallback to just spell name if spell info not found
+                                pdf_data[field_id] = spell_name
+                                print(f"DEBUG: Mapped spell '{spell_name}' (no details found) to field '{field_id}' for level {level_key}")
+                else:
+                    print(f"DEBUG: No field mapping found for spell level '{level_key}'")
+
           # Personality, ideals, bonds, flaws (placeholders, could add UI fields)
         # Equipment and features (placeholders, could add UI fields)
         # Currency (placeholders)
@@ -2886,24 +2789,20 @@ class MagicItemGenerator(QMainWindow):
         if not spell_slots:
             self.spell_info_label.setText('No spell slots available at this level.')
             return
-        
-        # Get class spell list
+
         class_spells = self.get_class_spells(class_name)
         print(f"[DEBUG] class_spells keys: {list(class_spells.keys()) if class_spells else 'None'}")
         if not class_spells:
             self.spell_info_label.setText('No spells available for this class.')
             return
-        
-        # Update info label
+
         slot_info = ', '.join([f"{slots} {spell_level}" for spell_level, slots in spell_slots.items()])
         self.spell_info_label.setText(f'Spell Slots: {slot_info}')
-        
-        # First, create cantrip selection if applicable
+
         cantrips_known = self.get_cantrips_known(class_name, level)
         if cantrips_known > 0:
             self.create_spell_level_section('0th', class_spells, class_name)
         
-        # Create spell selection for each spell level
         for spell_level in sorted(spell_slots.keys(), key=lambda x: int(x.replace('st', '').replace('nd', '').replace('rd', '').replace('th', ''))):
             self.create_spell_level_section(spell_level, class_spells, class_name)
     
@@ -2920,10 +2819,8 @@ class MagicItemGenerator(QMainWindow):
         return None
     
     def get_spell_slots(self, caster_type, level):
-        """Get spell slots for a caster type and level"""
         print(f"[DEBUG] get_spell_slots: caster_type='{caster_type}', level={level}")
-        
-        # Map class caster types to spell slot table keys
+
         caster_type_map = {
             'full': 'full_caster',
             'half': 'half_caster', 
@@ -2949,15 +2846,13 @@ class MagicItemGenerator(QMainWindow):
         return {}
     
     def get_class_spells(self, class_name):
-        """Get available spells for a class"""
         print(f"[DEBUG] get_class_spells: class_name='{class_name}'")
         if not self.spell_data:
             print(f"[DEBUG] No spell data loaded")
             return {}
         
         print(f"[DEBUG] Total spells in data: {len(self.spell_data)}")
-        
-        # Group spells by level for this class
+
         class_spells = {}
         spell_count = 0
         for spell in self.spell_data:
@@ -2979,23 +2874,18 @@ class MagicItemGenerator(QMainWindow):
         return class_spells
     
     def create_spell_level_section(self, spell_level, class_spells, class_name):
-        """Create UI section for selecting spells of a specific level"""
-        # Get available spells for this level
         available_spells = class_spells.get(spell_level, [])
         if not available_spells:
             return
         
-        # Create section widget
         section_widget = QWidget()
         section_layout = QVBoxLayout(section_widget)
-        
-        # Section header
+
         header_label = QLabel(f'{spell_level.title()} Level Spells')
         header_label.setStyleSheet('font-weight: bold; font-size: 11pt;')
         section_layout.addWidget(header_label)
         
-        # Determine number of spells to select
-        if spell_level == '0th':  # Cantrips
+        if spell_level == '0th':
             num_spells = self.get_cantrips_known(class_name, self.level_spin.value())
         else:
             num_spells = self.get_spells_known(class_name, self.level_spin.value(), spell_level)
@@ -3005,14 +2895,12 @@ class MagicItemGenerator(QMainWindow):
         
         info_label = QLabel(f'Select {num_spells} spells:')
         section_layout.addWidget(info_label)
-        
-        # Create spell selection dropdowns
+
         spell_combos = []
         for i in range(num_spells):
             combo = QComboBox()
             combo.addItem('-- Select Spell --')
             
-            # Add available spells
             for spell in sorted(available_spells, key=lambda x: x.get('Name', '')):
                 spell_name = spell.get('Name', '')
                 if spell_name:
@@ -3020,18 +2908,14 @@ class MagicItemGenerator(QMainWindow):
             
             section_layout.addWidget(combo)
             spell_combos.append(combo)
-        
-        # Store widgets for this spell level
+
         if spell_level not in self.spell_widgets:
             self.spell_widgets[spell_level] = []
         self.spell_widgets[spell_level].extend(spell_combos)
         
-        # Add section to main layout
         self.spell_levels_layout.addWidget(section_widget)
     
     def get_cantrips_known(self, class_name, level):
-        """Get number of cantrips known for a class at a given level"""
-        # Basic cantrip progression for most full casters
         cantrip_progression = {
             'Bard': {1: 2, 4: 3, 10: 4},
             'Cleric': {1: 3, 4: 4, 10: 5},
@@ -3039,7 +2923,7 @@ class MagicItemGenerator(QMainWindow):
             'Sorcerer': {1: 4, 4: 5, 10: 6},
             'Warlock': {1: 2, 4: 3, 10: 4},
             'Wizard': {1: 3, 4: 4, 10: 5},
-            'Artificer': {1: 2, 4: 2, 10: 3},
+            'Artificer': {1: 2, 6: 3, 14: 4},
         }
         
         if class_name not in cantrip_progression:
@@ -3055,20 +2939,13 @@ class MagicItemGenerator(QMainWindow):
         return cantrips
     
     def get_spells_known(self, class_name, level, spell_level):
-        """Get number of spells known for a class at a given level"""
-        # This is a simplified version - in practice, different classes have different rules
-        # For prepared casters (Cleric, Druid, Wizard), they prepare spells equal to 
-        # their spellcasting modifier + level (minimum 1)
-        # For known casters (Bard, Sorcerer, Warlock), they have a fixed table
         
         prepared_casters = ['Cleric', 'Druid', 'Wizard', 'Artificer', 'Paladin', 'Ranger']
         
         if class_name in prepared_casters:
-            # For prepared casters, show a reasonable number of spell slots
-            # This is simplified - in reality they prepare based on ability modifier + level
-            return min(level + 1, 10)  # Cap at 10 for UI purposes
+
+            return min(level + 1, 10)  
         else:
-            # For known casters, use simplified progression
             known_progression = {
                 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10,
                 10: 11, 11: 12, 12: 12, 13: 13, 14: 13, 15: 14, 16: 14,
@@ -3077,7 +2954,7 @@ class MagicItemGenerator(QMainWindow):
             return known_progression.get(level, 2)
     
     def get_selected_spells(self):
-        """Get all selected spells"""
+
         selected = {}
         for spell_level, widgets in self.spell_widgets.items():
             spells = []
@@ -3091,7 +2968,6 @@ class MagicItemGenerator(QMainWindow):
         return selected
     
     def get_spell_info(self, spell_name):
-        """Get detailed information for a spell"""
         for spell in self.spell_data:
             if spell.get('Name', '').strip() == spell_name:
                 return spell

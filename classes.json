@@ -28,7 +28,7 @@
     "half_caster": {
       "description": "Half Casters (Paladin, Ranger, Artificer)",
       "progression": {
-        "1": {},
+        "1": {"1st": 2},
         "2": {"1st": 2},
         "3": {"1st": 3},
         "4": {"1st": 3},
