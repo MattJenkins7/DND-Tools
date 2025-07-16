@@ -338,13 +338,20 @@ class CharacterCreator(QMainWindow):
         self.proficiency_widget.setLayout(self.proficiency_layout)
         self.proficiency_dropdowns = [] 
         char_layout.addWidget(QLabel('Race Skill Proficiencies:'))
-        char_layout.addWidget(self.proficiency_widget)
+        self.race_skill_widget = QWidget()
+        self.race_skill_layout = QHBoxLayout()
+        self.race_skill_layout.setAlignment(Qt.AlignCenter)
+        self.race_skill_widget.setLayout(self.race_skill_layout)
+        char_layout.addWidget(self.race_skill_widget)
+        self.race_skill_checkboxes = []
+        self.required_race_skills = 0
+        self.allowed_race_skills = []
 
-        def update_proficiency_dropdowns(race_name):
-            for dropdown in self.proficiency_dropdowns:
-                self.proficiency_layout.removeWidget(dropdown)
-                dropdown.deleteLater()
-            self.proficiency_dropdowns.clear()
+        def update_race_skill_checkboxes(race_name):
+            for cb in self.race_skill_checkboxes:
+                self.race_skill_layout.removeWidget(cb)
+                cb.deleteLater()
+            self.race_skill_checkboxes.clear()
             self.required_race_skills = 0
             self.allowed_race_skills = []
             if not race_name or race_name == 'None':
@@ -362,67 +369,67 @@ class CharacterCreator(QMainWindow):
                             skills = [s.strip() for s in skills_part.split(',') if s.strip()]
                             self.required_race_skills = num_to_choose
                             self.allowed_race_skills = skills
-                            for i in range(num_to_choose):
-                                dropdown = QComboBox()
-                                dropdown.addItem("-- Select Skill --")
-                                dropdown.addItems(skills)
-                                dropdown.currentTextChanged.connect(prevent_duplicate_selections)
-                                self.proficiency_layout.addWidget(dropdown)
-                                self.proficiency_dropdowns.append(dropdown)
+                            for skill in skills:
+                                cb = QCheckBox(skill)
+                                cb.setFixedSize(140, 36)
+                                cb.setStyleSheet('QCheckBox { min-width: 120px; min-height: 28px; max-width: 140px; max-height: 36px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
+                                self.race_skill_layout.addWidget(cb)
+                                self.race_skill_checkboxes.append(cb)
+                            def enforce_limit():
+                                checked = [cb for cb in self.race_skill_checkboxes if cb.isChecked()]
+                                if len(checked) >= self.required_race_skills:
+                                    for cb in self.race_skill_checkboxes:
+                                        if not cb.isChecked():
+                                            cb.setEnabled(False)
+                                else:
+                                    for cb in self.race_skill_checkboxes:
+                                        cb.setEnabled(True)
+                            for cb in self.race_skill_checkboxes:
+                                cb.stateChanged.connect(enforce_limit)
+                            enforce_limit()
                         else:
-                            dropdown = QComboBox()
-                            dropdown.addItem(prof_choice)
-                            dropdown.setEnabled(False)
-                            self.proficiency_layout.addWidget(dropdown)
-                            self.proficiency_dropdowns.append(dropdown)
+                            cb = QCheckBox(prof_choice)
+                            cb.setChecked(True)
+                            cb.setEnabled(False)
+                            cb.setFixedSize(140, 36)
+                            cb.setStyleSheet('QCheckBox { min-width: 120px; min-height: 28px; max-width: 140px; max-height: 36px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
+                            self.race_skill_layout.addWidget(cb)
+                            self.race_skill_checkboxes.append(cb)
                             self.required_race_skills = 1
                             self.allowed_race_skills = [prof_choice]
                     break
 
-        def prevent_duplicate_selections():
-            selected_skills = [dropdown.currentText() for dropdown in self.proficiency_dropdowns 
-                             if dropdown.currentText() != "-- Select Skill --"]
-            for dropdown in self.proficiency_dropdowns:
-                current_selection = dropdown.currentText()
-                dropdown.blockSignals(True)
-                dropdown.clear()
-                dropdown.addItem("-- Select Skill --")
-                for skill in self.allowed_race_skills:
-                    if skill not in selected_skills or skill == current_selection:
-                        dropdown.addItem(skill)
-                dropdown.setCurrentText(current_selection)
-                dropdown.blockSignals(False)
-
         def get_selected_race_skills():
-            return [dropdown.currentText() for dropdown in self.proficiency_dropdowns 
-                   if dropdown.currentText() != "-- Select Skill --"]
+            return [cb.text() for cb in self.race_skill_checkboxes if cb.isChecked()]
 
-        self.update_proficiency_dropdowns = update_proficiency_dropdowns
+        self.update_race_skill_checkboxes = update_race_skill_checkboxes
         self.get_selected_race_skills = get_selected_race_skills
-        self.race_combo.currentTextChanged.connect(self.update_proficiency_dropdowns)
-        self.update_proficiency_dropdowns(self.race_combo.currentText())
-        self.class_proficiency_widget = QWidget()
-        self.class_proficiency_layout = QVBoxLayout()
-        self.class_proficiency_widget.setLayout(self.class_proficiency_layout)
-        self.class_proficiency_dropdowns = []
-        char_layout.addWidget(QLabel('Class Skill Proficiencies:'))
-        char_layout.addWidget(self.class_proficiency_widget)
+        self.race_combo.currentTextChanged.connect(self.update_race_skill_checkboxes)
+        self.update_race_skill_checkboxes(self.race_combo.currentText())
 
-        def update_class_proficiency_dropdowns(class_name):
-            for dropdown in self.class_proficiency_dropdowns:
-                self.class_proficiency_layout.removeWidget(dropdown)
-                dropdown.deleteLater()
-            self.class_proficiency_dropdowns.clear()
+        char_layout.addWidget(QLabel('Class Skill Proficiencies:'))
+        self.class_skill_widget = QWidget()
+        self.class_skill_layout = QHBoxLayout()
+        self.class_skill_layout.setAlignment(Qt.AlignCenter)
+        self.class_skill_widget.setLayout(self.class_skill_layout)
+        char_layout.addWidget(self.class_skill_widget)
+        self.class_skill_checkboxes = []
+        self.required_class_skills = 0
+        self.allowed_class_skills = []
+
+        def update_class_skill_checkboxes(class_name):
+            for cb in self.class_skill_checkboxes:
+                self.class_skill_layout.removeWidget(cb)
+                cb.deleteLater()
+            self.class_skill_checkboxes.clear()
             self.required_class_skills = 0
             self.allowed_class_skills = []
             if not class_name or class_name == 'None':
-                print('[DEBUG] No class selected for class proficiencies')
                 return
             for entry in self.class_data:
                 if entry.get('name', '').strip() == class_name:
                     proficiencies = entry.get('proficiencies', {})
                     skills_field = proficiencies.get('skills', [])
-                    print(f'[DEBUG] Found class: {class_name}, skills_field: {skills_field}')
                     if skills_field and isinstance(skills_field, list) and len(skills_field) > 1:
                         try:
                             num_to_choose = int(skills_field[0])
@@ -431,41 +438,34 @@ class CharacterCreator(QMainWindow):
                         skills = [s for s in skills_field[1:]]
                         self.required_class_skills = num_to_choose
                         self.allowed_class_skills = skills
-                        for i in range(num_to_choose):
-                            dropdown = QComboBox()
-                            dropdown.addItem('-- Select Skill --')
-                            dropdown.addItems(skills)
-                            dropdown.currentTextChanged.connect(prevent_duplicate_class_selections)
-                            self.class_proficiency_layout.addWidget(dropdown)
-                            self.class_proficiency_dropdowns.append(dropdown)
-                        print(f'[DEBUG] Created {num_to_choose} class skill dropdowns with options: {skills}')
-                    else:
-                        print(f'[DEBUG] No valid skills_field for class: {class_name}')
+                        for skill in skills:
+                            cb = QCheckBox(skill)
+                            cb.setFixedSize(140, 36)
+                            cb.setStyleSheet('QCheckBox { min-width: 120px; min-height: 28px; max-width: 140px; max-height: 36px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
+                            self.class_skill_layout.addWidget(cb)
+                            self.class_skill_checkboxes.append(cb)
+                        def enforce_limit():
+                            checked = [cb for cb in self.class_skill_checkboxes if cb.isChecked()]
+                            if len(checked) >= self.required_class_skills:
+                                for cb in self.class_skill_checkboxes:
+                                    if not cb.isChecked():
+                                        cb.setEnabled(False)
+                            else:
+                                for cb in self.class_skill_checkboxes:
+                                    cb.setEnabled(True)
+                        for cb in self.class_skill_checkboxes:
+                            cb.stateChanged.connect(enforce_limit)
+                        enforce_limit()
                     break
 
-        def prevent_duplicate_class_selections():
-            selected_skills = [dropdown.currentText() for dropdown in self.class_proficiency_dropdowns 
-                             if dropdown.currentText() != '-- Select Skill --']
-            for dropdown in self.class_proficiency_dropdowns:
-                current_selection = dropdown.currentText()
-                dropdown.blockSignals(True)
-                dropdown.clear()
-                dropdown.addItem('-- Select Skill --')
-                for skill in self.allowed_class_skills:
-                    if skill not in selected_skills or skill == current_selection:
-                        dropdown.addItem(skill)
-                dropdown.setCurrentText(current_selection)
-                dropdown.blockSignals(False)
-
         def get_selected_class_skills():
-            return [dropdown.currentText() for dropdown in self.class_proficiency_dropdowns 
-                   if dropdown.currentText() != '-- Select Skill --']
+            return [cb.text() for cb in self.class_skill_checkboxes if cb.isChecked()]
 
-        self.update_class_proficiency_dropdowns = update_class_proficiency_dropdowns
+        self.update_class_skill_checkboxes = update_class_skill_checkboxes
         self.get_selected_class_skills = get_selected_class_skills
-        self.class_combo.currentTextChanged.connect(self.update_class_proficiency_dropdowns)
-        QTimer.singleShot(0, lambda: self.update_class_proficiency_dropdowns(self.class_combo.currentText()))
-
+        self.class_combo.currentTextChanged.connect(self.update_class_skill_checkboxes)
+        QTimer.singleShot(0, lambda: self.update_class_skill_checkboxes(self.class_combo.currentText()))
+        # ...existing code after skill proficiencies...
         self.spell_data = []
         self.selected_spells = {}
         self.spell_widgets = {}
@@ -1581,6 +1581,7 @@ class CharacterCreator(QMainWindow):
                     break
         
         saving_throw_map = {
+           
             "strength": "Check Box 11",
             "dexterity": "Check Box 18",
             "constitution": "Check Box 19",
@@ -1735,7 +1736,7 @@ class CharacterCreator(QMainWindow):
                                 # Format: "Spell Name, Casting Time, Range, (Components)"
                                 formatted_spell = spell_name
                                 if casting_time:
-                                    formatted_spell += f", {casting_time}"
+                                    formatted_spell += f" ({casting_time}"
                                 if range_info:
                                     formatted_spell += f", {range_info}"
                                 if components:
@@ -1928,10 +1929,6 @@ class CharacterCreator(QMainWindow):
                                 item.setHidden(True)
                         self.required_race_skills = 1
                         self.allowed_race_skills = [prof_choice]
-                else:
-                    # No skills to choose from
-                    for i in range(self.skills_list.count()):
-                        self.skills_list.item(i).setHidden(True)
                 break
 
     def enforce_skill_selection_limit(self):
@@ -2217,10 +2214,11 @@ class CharacterCreator(QMainWindow):
         return class_spells
     
     def create_spell_level_section(self, spell_level, class_spells, class_name):
+        from PySide6.QtWidgets import QCheckBox
         available_spells = class_spells.get(spell_level, [])
         if not available_spells:
             return
-        
+
         section_widget = QWidget()
         section_layout = QVBoxLayout(section_widget)
 
@@ -2228,36 +2226,48 @@ class CharacterCreator(QMainWindow):
         header_label = QLabel(f'{display_level} Spells')
         header_label.setStyleSheet('font-weight: bold; font-size: 11pt;')
         section_layout.addWidget(header_label)
-        
+
         if spell_level == '0th':
             num_spells = self.get_cantrips_known(class_name, self.level_spin.value())
         else:
             num_spells = self.get_spells_known(class_name, self.level_spin.value(), spell_level)
-        
+
         if num_spells <= 0:
             return
-        
+
         print(f"[DEBUG] Number of spells to select for {spell_level}: {num_spells}")
         info_label = QLabel(f'Select {num_spells} spells:')
         section_layout.addWidget(info_label)
 
-        spell_combos = []
-        for i in range(num_spells):
-            combo = QComboBox()
-            combo.addItem('-- Select Spell --')
-            
-            for spell in sorted(available_spells, key=lambda x: x.get('Name', '')):
-                spell_name = spell.get('Name', '')
-                if spell_name:
-                    combo.addItem(spell_name)
-            
-            section_layout.addWidget(combo)
-            spell_combos.append(combo)
+        spell_checkboxes = []
+        for spell in sorted(available_spells, key=lambda x: x.get('Name', '')):
+            spell_name = spell.get('Name', '')
+            if spell_name:
+                cb = QCheckBox(spell_name)
+                # Style as button
+                cb.setStyleSheet('QCheckBox { min-width: 120px; min-height: 28px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
+                spell_checkboxes.append(cb)
+                section_layout.addWidget(cb)
+
+        # Limit selection to num_spells
+        def enforce_limit():
+            checked = [cb for cb in spell_checkboxes if cb.isChecked()]
+            if len(checked) >= num_spells:
+                for cb in spell_checkboxes:
+                    if not cb.isChecked():
+                        cb.setEnabled(False)
+            else:
+                for cb in spell_checkboxes:
+                    cb.setEnabled(True)
+        for cb in spell_checkboxes:
+            cb.stateChanged.connect(enforce_limit)
+        # Initial enforcement
+        enforce_limit()
 
         if spell_level not in self.spell_widgets:
             self.spell_widgets[spell_level] = []
-        self.spell_widgets[spell_level].extend(spell_combos)
-        
+        self.spell_widgets[spell_level].extend(spell_checkboxes)
+
         self.spell_levels_layout.addWidget(section_widget)
     
     def get_cantrips_known(self, class_name, level):
@@ -2299,12 +2309,14 @@ class CharacterCreator(QMainWindow):
             return known_progression.get(level, 2)
     
     def get_selected_spells(self):
-
         selected = {}
         for spell_level, widgets in self.spell_widgets.items():
             spells = []
             for widget in widgets:
-                if hasattr(widget, 'currentText'):
+                if isinstance(widget, QCheckBox):
+                    if widget.isChecked():
+                        spells.append(widget.text())
+                elif hasattr(widget, 'currentText'):
                     spell = widget.currentText()
                     if spell and spell != '-- Select Spell --':
                         spells.append(spell)
