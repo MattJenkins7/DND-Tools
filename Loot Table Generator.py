@@ -2888,7 +2888,8 @@ class MagicItemGenerator(QMainWindow):
         if spell_level == '0th':
             num_spells = self.get_cantrips_known(class_name, self.level_spin.value())
         else:
-            num_spells = self.get_spells_known(class_name, self.level_spin.value(), spell_level)
+            spell_slots = self.get_spell_slots(self.get_caster_type(class_name), self.level_spin.value())
+            num_spells = spell_slots.get(spell_level, 0)
         
         if num_spells <= 0:
             return

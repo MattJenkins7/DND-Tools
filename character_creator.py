@@ -409,8 +409,8 @@ class CharacterCreator(QMainWindow):
 
         char_layout.addWidget(QLabel('Class Skill Proficiencies:'))
         self.class_skill_widget = QWidget()
-        self.class_skill_layout = QHBoxLayout()
-        self.class_skill_layout.setAlignment(Qt.AlignCenter)
+        self.class_skill_layout = QGridLayout()
+        self.class_skill_layout.setAlignment(Qt.AlignLeft)
         self.class_skill_widget.setLayout(self.class_skill_layout)
         char_layout.addWidget(self.class_skill_widget)
         self.class_skill_checkboxes = []
@@ -438,11 +438,23 @@ class CharacterCreator(QMainWindow):
                         skills = [s for s in skills_field[1:]]
                         self.required_class_skills = num_to_choose
                         self.allowed_class_skills = skills
-                        for skill in skills:
+                        for idx, skill in enumerate(skills):
                             cb = QCheckBox(skill)
                             cb.setFixedSize(140, 36)
-                            cb.setStyleSheet('QCheckBox { min-width: 120px; min-height: 28px; max-width: 140px; max-height: 36px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
-                            self.class_skill_layout.addWidget(cb)
+                            cb.setLayoutDirection(Qt.LeftToRight)
+                            cb.setStyleSheet('QCheckBox { text-align: left; min-width: 120px; min-height: 28px; max-width: 140px; max-height: 36px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
+                            cb.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+                            cb.setMinimumWidth(120)
+                            cb.setMaximumWidth(140)
+                            cb.setMinimumHeight(28)
+                            cb.setMaximumHeight(36)
+                            try:
+                                cb.setAlignment(Qt.AlignLeft)
+                            except Exception:
+                                pass
+                            row = idx // 12
+                            col = idx % 12
+                            self.class_skill_layout.addWidget(cb, row, col)
                             self.class_skill_checkboxes.append(cb)
                         def enforce_limit():
                             checked = [cb for cb in self.class_skill_checkboxes if cb.isChecked()]
@@ -2145,6 +2157,8 @@ class CharacterCreator(QMainWindow):
                 key=lambda x: int(x.replace('st', '').replace('nd', '').replace('rd', '').replace('th', ''))
             ):
                 self.create_spell_level_section(spell_level, class_spells, class_name)
+
+         
     
     def get_caster_type(self, class_name):
         """Get the caster type for a class"""
@@ -2230,7 +2244,8 @@ class CharacterCreator(QMainWindow):
         if spell_level == '0th':
             num_spells = self.get_cantrips_known(class_name, self.level_spin.value())
         else:
-            num_spells = self.get_spells_known(class_name, self.level_spin.value(), spell_level)
+            spell_slots = self.get_spell_slots(self.get_caster_type(class_name), self.level_spin.value())
+            num_spells = spell_slots.get(spell_level, 0)
 
         if num_spells <= 0:
             return
@@ -2240,14 +2255,18 @@ class CharacterCreator(QMainWindow):
         section_layout.addWidget(info_label)
 
         spell_checkboxes = []
-        for spell in sorted(available_spells, key=lambda x: x.get('Name', '')):
+        grid_layout = QGridLayout()
+        for i, spell in enumerate(sorted(available_spells, key=lambda x: x.get('Name', ''))):
             spell_name = spell.get('Name', '')
             if spell_name:
                 cb = QCheckBox(spell_name)
-                # Style as button
-                cb.setStyleSheet('QCheckBox { min-width: 120px; min-height: 28px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
+                cb.setFixedSize(140, 36)
+                cb.setStyleSheet('QCheckBox { align-items: left; min-width: 120px; min-height: 28px; max-width: 140px; max-height: 36px; border: 1px solid #888; border-radius: 6px; padding: 6px; background: #eee; } QCheckBox::indicator { width: 0; height: 0; } QCheckBox:checked { background: #aaf; border: 2px solid #44f; }')
                 spell_checkboxes.append(cb)
-                section_layout.addWidget(cb)
+                row = i // 8
+                col = i % 8
+                grid_layout.addWidget(cb, row, col)
+        section_layout.addLayout(grid_layout)
 
         # Limit selection to num_spells
         def enforce_limit():
@@ -2334,7 +2353,7 @@ def gui_main():
     app = QApplication(sys.argv)
     window = CharacterCreator()
     window.setWindowTitle('D&D Character Creator')
-    window.setGeometry(100, 100, 800, 600)
+    window.setGeometry(100, 100, 1780, 1000)
     window.show()
     sys.exit(app.exec())
 
