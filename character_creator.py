@@ -207,38 +207,53 @@ class CharacterCreator(QMainWindow):
         self.class_combo.currentTextChanged.connect(self.update_class_info)
         self.update_class_info(self.class_combo.currentText())
         stat_gen_bar = QHBoxLayout()
-        stat_label = QLabel('Stat Generation:')
-        stat_label.setStyleSheet('font-weight: bold; font-size: 12pt;')
-        stat_gen_bar.addWidget(stat_label)
+        # stat_label = QLabel('Stat Generation:')
+        # stat_label.setStyleSheet('font-weight: bold; font-size: 14pt; letter-spacing: 1px;')
+        # stat_gen_bar.addWidget(stat_label)
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
-        stat_grid = QGridLayout()
-        stat_grid.addWidget(QLabel('<b>Stat</b>'), 0, 0)
-        stat_grid.addWidget(QLabel('<b>Value</b>'), 0, 1)
-        stat_grid.addWidget(QLabel('<b>Score Increases</b>'), 0, 2)
-        stat_grid.addWidget(QLabel('<b>Total</b>'), 0, 3)
+        stat_card_layout = QHBoxLayout()
+        stat_card_layout.setSpacing(8)
+        stat_card_layout.setAlignment(Qt.AlignLeft)
         self.stat_spinboxes = []
         self.stat_increase_labels = []
         self.stat_total_labels = []
         self.stat_combos = []
         for i, stat in enumerate(stat_names):
-            stat_grid.addWidget(QLabel(stat), i+1, 0)
+            card = QFrame()
+            card.setFrameShape(QFrame.StyledPanel)
+            card.setStyleSheet('''
+                QFrame { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #eaf6ff, stop:1 #d0eaff); border-radius: 12px; border: 1.5px solid #b0c4de; min-width: 60px; max-width: 100px; min-height: 110px; }
+            ''')
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(8, 8, 8, 8)
+            stat_title = QLabel(stat)
+            stat_title.setAlignment(Qt.AlignCenter)
+            stat_title.setStyleSheet('font-size: 15px; font-weight: 600; color: #1a2a4a; letter-spacing: 1px; padding: 0px 6px; min-height: 22px; max-height: 24px;')
+            card_layout.addWidget(stat_title)
             spin = QSpinBox()
+            spin.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
             spin.setRange(1, 20)
             spin.setValue(10)
-            stat_grid.addWidget(spin, i+1, 1)
-            inc_label = QLabel('0')
-            inc_label.setMinimumWidth(24)
-            inc_label.setAlignment(Qt.AlignLeft)
-            stat_grid.addWidget(inc_label, i+1, 2)
-            total_label = QLabel('10')
-            total_label.setMinimumWidth(24)
-            total_label.setAlignment(Qt.AlignLeft)
-            stat_grid.addWidget(total_label, i+1, 3)
+            spin.setAlignment(Qt.AlignCenter)
+            spin.setStyleSheet('''
+                font-size: 18px; font-weight: bold; background: #fff; border-radius: 6px; padding: 0px 6px; min-width: 40px; min-height: 28px; max-height: 32px; border: 2px solid #000;
+                QSpinBox::up-button, QSpinBox::down-button { width: 0px; height: 0px; border: none; background: none; }
+                QSpinBox::up-arrow, QSpinBox::down-arrow { image: none; width: 0px; height: 0px; }
+            ''')
+            card_layout.addWidget(spin)
+            inc_label = QLabel('Increase: 0')
+            inc_label.setAlignment(Qt.AlignCenter)
+            inc_label.setStyleSheet('font-size: 12px; color: #2a7; background: #eaffea; border-radius: 4px; padding: 0px 6px; margin-top: 2px; font-weight: 500; min-height: 22px; max-height: 24px;')
+            card_layout.addWidget(inc_label)
+            total_label = QLabel('Total: 10')
+            total_label.setAlignment(Qt.AlignCenter)
+            total_label.setStyleSheet('font-size: 13px; color: #226; background: #f0f8ff; border-radius: 4px; padding: 0px 6px; margin-top: 1px; font-weight: 500; min-height: 22px; max-height: 24px;')
+            card_layout.addWidget(total_label)
             self.stat_spinboxes.append(spin)
             self.stat_increase_labels.append(inc_label)
             self.stat_total_labels.append(total_label)
-        stat_grid.setHorizontalSpacing(12)
-        stat_grid.setVerticalSpacing(4)
+            stat_card_layout.addWidget(card)
+        stat_gen_bar.addLayout(stat_card_layout)
         from PySide6.QtWidgets import QRadioButton, QButtonGroup
         asi_radio_bar = QHBoxLayout()
         asi_radio_bar.addWidget(QLabel('Apply Ability Score Increases from:'))
@@ -305,7 +320,7 @@ class CharacterCreator(QMainWindow):
         char_layout.addLayout(class_bar)
         char_layout.addWidget(class_info_section)
         char_layout.addLayout(asi_radio_bar)
-        char_layout.addLayout(stat_grid)
+        char_layout.addLayout(stat_gen_bar)
         char_layout.addLayout(stat_controls_bar)
         char_layout.addLayout(param_bar)
         info_bar = QHBoxLayout()
@@ -477,7 +492,6 @@ class CharacterCreator(QMainWindow):
         self.get_selected_class_skills = get_selected_class_skills
         self.class_combo.currentTextChanged.connect(self.update_class_skill_checkboxes)
         QTimer.singleShot(0, lambda: self.update_class_skill_checkboxes(self.class_combo.currentText()))
-        # ...existing code after skill proficiencies...
         self.spell_data = []
         self.selected_spells = {}
         self.spell_widgets = {}
@@ -543,8 +557,8 @@ class CharacterCreator(QMainWindow):
                         asi[k] += v
                     break
         for i, stat in enumerate(stat_names):
-            self.stat_increase_labels[i].setText(str(asi.get(stat, 0)))
-            self.stat_total_labels[i].setText(str(values[i] + asi.get(stat, 0)))
+            self.stat_increase_labels[i].setText(f"Increase: {asi.get(stat, 0)}")
+            self.stat_total_labels[i].setText(f"Total: {values[i] + asi.get(stat, 0)}")
 
     def on_asi_source_changed(self):
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
@@ -580,8 +594,8 @@ class CharacterCreator(QMainWindow):
                 asi[k] += v
         values = [spin.value() for spin in self.stat_spinboxes]
         for i, stat in enumerate(stat_names):
-            self.stat_increase_labels[i].setText(str(asi.get(stat, 0)))
-            self.stat_total_labels[i].setText(str(values[i] + asi.get(stat, 0)))
+            self.stat_increase_labels[i].setText(f"Increase: {asi.get(stat, 0)}")
+            self.stat_total_labels[i].setText(f"Total: {values[i] + asi.get(stat, 0)}")
 
     def generate_stats(self):
         import random
@@ -616,7 +630,7 @@ class CharacterCreator(QMainWindow):
             spin.blockSignals(True)
             spin.setValue(numbers[i])
             spin.blockSignals(False)
-        self.asi_neither_radio.setChecked(True)
+        # Preserve the user's ASI source selection
         self.update_stat_totals()
 
     def handle_stat_swap(self, changed_idx, *args):
@@ -806,88 +820,145 @@ class CharacterCreator(QMainWindow):
         return asi, prompt
 
     def prompt_asi_choices(self, asi_prompts):
-        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QSpinBox, QPushButton, QHBoxLayout, QListWidget, QListWidgetItem
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QComboBox, QSpinBox, QPushButton, QGroupBox, QFormLayout
+        from PySide6.QtCore import QPropertyAnimation
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         asi_result = {k: 0 for k in stat_names}
         for prompt in asi_prompts:
-            dlg = QDialog()
-            dlg.setWindowTitle(f"Select Ability Score Increases ({prompt['source']})")
-            layout = QVBoxLayout()
-            layout.addWidget(QLabel(f"{prompt['raw']}"))
+            dlg = QDialog(self)
+            dlg.setWindowTitle(f"Assign Ability Score Increases ({prompt['source']})")
+            dlg.setMinimumWidth(400)
+            main_layout = QVBoxLayout()
+            # Section header
+            header = QLabel(f"<b>{prompt['source']} ASI:</b> <br><i>{prompt['raw']}</i>")
+            header.setWordWrap(True)
+            header.setStyleSheet('font-size: 16px; color: #2a2a2a; margin-bottom: 8px;')
+            main_layout.addWidget(header)
+            main_layout.addSpacing(10)
+
+            # Group box for stat assignment
+            asi_group = QGroupBox("Assign Points")
+            asi_group.setStyleSheet('QGroupBox { background: #f6faff; border-radius: 12px; border: 1.5px solid #b0c4de; font-size: 14px; margin-top: 8px; padding: 12px; }')
+            asi_layout = QFormLayout()
+            asi_layout.setSpacing(12)
+
+            # Fade-in animation for stat assignment group
+            asi_group.setGraphicsEffect(None)
+            animation = QPropertyAnimation(asi_group, b"windowOpacity")
+            animation.setDuration(400)
+            animation.setStartValue(0.0)
+            animation.setEndValue(1.0)
+
+            # Choose Any: let user pick stats and assign points
             if prompt['type'] == 'choose_any':
-                picks = []
-                used = set()
-                for idx, amt in enumerate(prompt.get('amounts', [])):
-                    row = QHBoxLayout()
-                    label = QLabel(f"Choose stat for +{amt}: ")
-                    combo = QComboBox()
-                    combo.addItems([s for s in stat_names if s not in used])
-                    row.addWidget(label)
-                    row.addWidget(combo)
-                    layout.addLayout(row)
-                    picks.append((combo, amt))
-                    def on_change(idx=idx):
-                        selected = [c.currentText() for c, _ in picks]
-                        for i, (c, _) in enumerate(picks):
-                            c.blockSignals(True)
-                            c.clear()
-                            c.addItems([s for s in stat_names if s not in selected or s == selected[i]])
-                            c.setCurrentText(selected[i])
-                            c.blockSignals(False)
-                    combo.currentIndexChanged.connect(on_change)
-                btn = QPushButton('OK')
+                amounts = prompt.get('amounts', [1])
+                combo_boxes = []
+                for i, amt in enumerate(amounts):
+                    stat_combo = QComboBox()
+                    stat_combo.addItems(stat_names)
+                    stat_combo.setToolTip(f"Select which stat receives +{amt}")
+                    stat_combo.setStyleSheet('font-size: 15px; min-height: 28px; border-radius: 6px; background: #eaf6ff;')
+                    label = QLabel(f"<b>+{amt}</b> to:")
+                    label.setStyleSheet('font-size: 15px;')
+                    asi_layout.addRow(label, stat_combo)
+                    combo_boxes.append((stat_combo, amt))
+                asi_group.setLayout(asi_layout)
+                main_layout.addWidget(asi_group)
+                animation.start()
+                main_layout.addSpacing(10)
+                btn = QPushButton('Confirm')
+                btn.setStyleSheet('font-size: 15px; font-weight: bold; background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #e0eaff, stop:1 #cbe6ff); border-radius: 8px; padding: 8px 18px;')
                 btn.clicked.connect(dlg.accept)
-                layout.addWidget(btn)
-                dlg.setLayout(layout)
+                main_layout.addWidget(btn)
+                dlg.setLayout(main_layout)
                 dlg.exec()
-                for c, amt in picks:
-                    asi_result[c.currentText()] += amt
+                for stat_combo, amt in combo_boxes:
+                    chosen_stat = stat_combo.currentText()
+                    asi_result[chosen_stat] += amt
+
+            # Points Among: let user distribute points among stats
             elif prompt['type'] == 'points_among':
-                allowed = prompt.get('allowed', stat_names)
                 points = prompt.get('points', 3)
-                spinboxes = []
-                row = QHBoxLayout()
-                row.addWidget(QLabel(f"Distribute {points} points among: "))
+                allowed = prompt.get('allowed', stat_names)
+                spin_boxes = {}
+                info_label = QLabel(f"Distribute <b>{points}</b> points among the following stats:")
+                info_label.setWordWrap(True)
+                info_label.setStyleSheet('font-size: 15px; color: #2a2a2a; margin-bottom: 4px;')
+                main_layout.addWidget(info_label)
+                main_layout.addSpacing(5)
                 for stat in allowed:
                     spin = QSpinBox()
                     spin.setRange(0, points)
-                    spin.setValue(0)
-                    row.addWidget(QLabel(stat))
-                    row.addWidget(spin)
-                    spinboxes.append((stat, spin))
-                layout.addLayout(row)
-                btn = QPushButton('OK')
-                layout.addWidget(btn)
-                def accept_if_valid():
-                    total = sum(spin.value() for _, spin in spinboxes)
-                    if total == points:
-                        dlg.accept()
-                btn.clicked.connect(accept_if_valid)
-                dlg.setLayout(layout)
-                dlg.exec()
-                for stat, spin in spinboxes:
-                    asi_result[stat] += spin.value()
-            elif prompt['type'] == 'choose_one_of':
-                combo = QComboBox()
-                combo.addItems(prompt.get('options', []))
-                layout.addWidget(QLabel('Choose one option:'))
-                layout.addWidget(combo)
-                btn = QPushButton('OK')
+                    spin.setToolTip(f"Assign points to {stat}")
+                    spin.setStyleSheet('font-size: 15px; min-height: 28px; border-radius: 6px; background: #eaf6ff;')
+                    stat_label = QLabel(stat)
+                    stat_label.setStyleSheet('font-size: 15px;')
+                    asi_layout.addRow(stat_label, spin)
+                    spin_boxes[stat] = spin
+                asi_group.setLayout(asi_layout)
+                main_layout.addWidget(asi_group)
+                animation.start()
+                main_layout.addSpacing(10)
+                btn = QPushButton('Confirm')
+                btn.setStyleSheet('font-size: 15px; font-weight: bold; background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #e0eaff, stop:1 #cbe6ff); border-radius: 8px; padding: 8px 18px;')
                 btn.clicked.connect(dlg.accept)
-                layout.addWidget(btn)
-                dlg.setLayout(layout)
+                main_layout.addWidget(btn)
+                dlg.setLayout(main_layout)
+                while True:
+                    dlg.exec()
+                    total = sum(spin_boxes[stat].value() for stat in allowed)
+                    if total > points:
+                        from PySide6.QtWidgets import QMessageBox
+                        QMessageBox.warning(dlg, 'Too Many Points', f'You assigned {total} points, but only {points} are allowed. Please adjust.')
+                    else:
+                        break
+                for stat in allowed:
+                    asi_result[stat] += spin_boxes[stat].value()
+
+            # Choose One Of: present options as dropdown
+            elif prompt['type'] == 'choose_one_of':
+                options = prompt.get('options', [])
+                combo = QComboBox()
+                combo.addItems(options)
+                combo.setToolTip("Select one option")
+                combo.setStyleSheet('font-size: 15px; min-height: 28px; border-radius: 6px; background: #eaf6ff;')
+                label = QLabel('Choose one option:')
+                label.setStyleSheet('font-size: 15px;')
+                asi_layout.addRow(label, combo)
+                asi_group.setLayout(asi_layout)
+                main_layout.addWidget(asi_group)
+                animation.start()
+                main_layout.addSpacing(10)
+                btn = QPushButton('Confirm')
+                btn.setStyleSheet('font-size: 15px; font-weight: bold; background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #e0eaff, stop:1 #cbe6ff); border-radius: 8px; padding: 8px 18px;')
+                btn.clicked.connect(dlg.accept)
+                main_layout.addWidget(btn)
+                dlg.setLayout(main_layout)
                 dlg.exec()
                 chosen = combo.currentText()
                 asi_sub, subprompt = self.parse_asi_string_with_prompt(chosen, prompt['source'])
                 for k, v in asi_sub.items():
                     asi_result[k] += v
-                if subprompt:
-                    subresult = self.prompt_asi_choices([subprompt])
-                    for k, v in subresult.items():
+                # If subprompt is another prompt, recursively handle
+                if subprompt and subprompt.get('type') not in [None, 'unknown']:
+                    sub_result = self.prompt_asi_choices([subprompt])
+                    for k, v in sub_result.items():
                         asi_result[k] += v
+
+            # Unknown or direct assignment: show info only
             else:
-                pass
-        return asi_result    
+                info_label = QLabel(f"Unable to parse ASI assignment. Please check the source or assign manually.")
+                info_label.setWordWrap(True)
+                info_label.setStyleSheet('font-size: 15px; color: #a00; background: #ffe0e0; border-radius: 8px; padding: 8px;')
+                main_layout.addWidget(info_label)
+                main_layout.addSpacing(10)
+                btn = QPushButton('OK')
+                btn.setStyleSheet('font-size: 15px; font-weight: bold; background: #ffe0e0; border-radius: 8px; padding: 8px 18px;')
+                btn.clicked.connect(dlg.accept)
+                main_layout.addWidget(btn)
+                dlg.setLayout(main_layout)
+                dlg.exec()
+        return asi_result
     
     def export_character_to_pdf(self):
         import re
@@ -947,7 +1018,6 @@ class CharacterCreator(QMainWindow):
         stat_names = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHA']
         base_stats = {stat: self.stat_spinboxes[i].value() for i, stat in enumerate(stat_names)}
         
-        # Calculate racial and background ASI bonuses
         race_checked = self.asi_race_radio.isChecked() or self.asi_both_radio.isChecked()
         background_checked = self.asi_bg_radio.isChecked() or self.asi_both_radio.isChecked()
         asi = {k: 0 for k in stat_names}
@@ -1062,9 +1132,6 @@ class CharacterCreator(QMainWindow):
                         break # Found background description
                 break # Found background
 
-        # CORRECTED LOGIC:
-        # Iterate over copies of race_features and bg_features to find lines for ProficienciesLang
-        # This ensures the original lists used for 'Features and Traits' are not modified.
         prof_lang_keywords = ["proficiency", "proficiencies", "language", "languages"]
         extracted_lines_for_prof_lang = []
 
