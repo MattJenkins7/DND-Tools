@@ -1,0 +1,16 @@
+import PyPDF2
+
+pdf_path = "Templates/2024_character_sheet.pdf"
+with open(pdf_path, "rb") as f:
+    reader = PyPDF2.PdfReader(f)
+    fields = reader.get_fields()
+    if fields:
+        for field_name, field in fields.items():
+            # The actual field name in the PDF is usually in the '/T' key
+            pdf_name = field.get('/T')
+            if pdf_name:
+                print(f'name="{pdf_name}"')
+            else:
+                print(f'name="{field_name}"')
+    else:
+        print("No form fields found.")
